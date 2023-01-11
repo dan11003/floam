@@ -32,6 +32,7 @@
 #include "lidar.h"
 #include "lidarOptimization.h"
 #include <ros/ros.h>
+#include <sstream>
 
 class OdomEstimationClass 
 {

@@ -25,7 +25,13 @@
 //local lib
 #include "lidar.h"
 #include "odomEstimationClass.h"
+#include "fstream"
+#include "iostream"
+#include "stdio.h"
+#include "string.h"
 
+using std::endl;
+using std::cout;
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
@@ -49,6 +55,34 @@ void velodyneEdgeHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 bool is_odom_inited = false;
 double total_time =0;
 int total_frame=0;
+std::vector<Eigen::Affine3d> g_poses;
+std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> g_clouds;
+
+void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory){
+    const std::string filename = directory + "alidarPose.csv";
+    std::fstream stream(filename.c_str(), std::fstream::out);
+    std::cout << "clouds size: " <<clouds.size() << std::endl;;
+    std::cout << "poses size: " <<poses.size() << std::endl;
+
+    for(int i = 0; i < poses.size() ; i++) {
+        ros::Time tRos;
+        pcl_conversions::fromPCL(clouds[i]->header.stamp, tRos);
+        const double time = tRos.toSec();
+        const Eigen::MatrixXd m = poses[i].matrix();
+
+        stream <<std::fixed <<m(0,0) <<  "," << m(0,1) <<  "," << m(0,2) <<  "," << m(0,3) <<  "," << endl <<
+                                m(1,0) <<  "," << m(1,1) <<  "," << m(1,2) <<  "," << m(1,3) <<  "," << endl <<
+                                m(2,0) <<  "," << m(2,1) <<  "," << m(2,2) <<  "," << m(2,3) <<  "," << endl <<
+                                m(3,0) <<  "," << m(3,1) <<  "," << m(3,2) <<  "," << time <<  "," << endl;
+        const std::string pcdPath = directory + std::string("full") + std::to_string(i) + ".pcd";
+        pcl::io::savePCDFileBinary(pcdPath, *clouds[i]);
+
+    }
+
+}
+void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
+
+}
 void odom_estimation(){
     while(1){
         if(!pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty()){
@@ -72,8 +106,14 @@ void odom_estimation(){
 
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_surf_in(new pcl::PointCloud<pcl::PointXYZI>());
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_edge_in(new pcl::PointCloud<pcl::PointXYZI>());
+            pcl::PointCloud<pcl::PointXYZI>::Ptr merged(new pcl::PointCloud<pcl::PointXYZI>());
+
+
             pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in);
             pcl::fromROSMsg(*pointCloudSurfBuf.front(), *pointcloud_surf_in);
+            *merged += *pointcloud_surf_in;
+            *merged += *pointcloud_edge_in;
+            pcl_conversions::toPCL(pointCloudEdgeBuf.front()->header.stamp, merged->header.stamp);
             ros::Time pointcloud_time = (pointCloudSurfBuf.front())->header.stamp;
             pointCloudEdgeBuf.pop();
             pointCloudSurfBuf.pop();
@@ -121,6 +161,16 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.y = t_current.y();
             laserOdometry.pose.pose.position.z = t_current.z();
             pubLaserOdometry.publish(laserOdometry);
+            g_clouds.push_back(merged);
+
+            Eigen::Matrix4d Trans; // Your Transformation Matrix
+            Trans.setIdentity();   // Set to Identity to make bottom row of Matrix 0,0,0,1
+            Trans.block<3,3>(0,0) = q_current.toRotationMatrix();;
+            Trans.block<3,1>(0,3) = t_current;
+            Eigen::Affine3d eigTransformNow(Trans);
+            g_poses.push_back(eigTransformNow);
+
+
 
         }
         //sleep 2 ms every time
@@ -128,12 +178,33 @@ void odom_estimation(){
         std::this_thread::sleep_for(dura);
     }
 }
+std::string CreateFolder(const std::string& basePath){
 
+  auto t = std::time(nullptr);
+  auto tm = *std::localtime(&t);
+
+  //const std::string timeStr(std::put_time(&tm, "%Y-%m-%d_%H-%M"));
+
+  std::time_t now = std::time(NULL);
+  std::tm * ptm = std::localtime(&now);
+  char buffer[32];
+  // Format: Mo, 15.06.2009 20:20:00
+  std::strftime(buffer, 32, "%a_%Y.%m.%d_%H:%M:%S", ptm);
+
+
+  const std::string dir = basePath + "/" + std::string(buffer) + std::string("/");
+  std::cout << dir << std::endl;
+  if (boost::filesystem::create_directories(dir)){
+      std::cout << "Created new directory" << "\n";
+  }
+  return dir;
+}
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "main");
     ros::NodeHandle nh;
 
+    std::string directory;
     int scan_line = 64;
     double vertical_angle = 2.0;
     double scan_period= 0.1;
@@ -146,6 +217,10 @@ int main(int argc, char **argv)
     nh.getParam("/min_dis", min_dis);
     nh.getParam("/scan_line", scan_line);
     nh.getParam("/map_resolution", map_resolution);
+    nh.getParam("/directory_output", directory);
+    directory = CreateFolder(directory);
+
+
 
     lidar_param.setScanPeriod(scan_period);
     lidar_param.setVerticalAngle(vertical_angle);
@@ -161,6 +236,7 @@ int main(int argc, char **argv)
     std::thread odom_estimation_process{odom_estimation};
 
     ros::spin();
+    SavePosesHomogeneousBALM(g_clouds, g_poses, directory);
 
     return 0;
 }

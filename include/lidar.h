@@ -5,6 +5,32 @@
 #define _LIDAR_H_
 
 //define lidar parameter
+#include "stdio.h"
+#include "pcl/point_types.h"
+#include "eigen3/Eigen/Dense"
+
+
+namespace vel_point{
+struct PointXYZIRT
+{
+  PCL_ADD_POINT4D;                    // quad-word XYZ
+  float         intensity;            ///< laser intensity reading
+  std::uint16_t ring;                 ///< laser ring number
+  float         time;                 ///< laser time reading
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
+}
+EIGEN_ALIGN16;
+}  // namespace velodyne_pcl
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRT,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, intensity, intensity)
+                                  (std::uint16_t, ring, ring)
+                                  (float, time, time))
+
+Eigen::Quaterniond euler2Quaternion(const double roll, const double pitch, const double yaw);
 
 namespace lidar{
 

@@ -5,10 +5,20 @@
 #include "lidar.h"
 
 
+Eigen::Quaterniond euler2Quaternion(const double roll, const double pitch, const double yaw)
+{
+  Eigen::AngleAxisd rollAngle(roll*M_PI/180.0, Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitchAngle(pitch*M_PI/180.0, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd yawAngle(yaw*M_PI/180.0, Eigen::Vector3d::UnitZ());
+
+  Eigen::Quaterniond q = rollAngle * yawAngle * pitchAngle;
+  return q;
+}
+
+
 lidar::Lidar::Lidar(){
  
 }
-
 
 void lidar::Lidar::setLines(double num_lines_in){
     num_lines=num_lines_in;

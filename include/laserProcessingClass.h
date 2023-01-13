@@ -3,7 +3,7 @@
 // Homepage https://wanghan.pro
 #ifndef _LASER_PROCESSING_CLASS_H_
 #define _LASER_PROCESSING_CLASS_H_
-
+#define PCL_NO_PRECOMPILE
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -14,6 +14,9 @@
 #include <pcl/filters/crop_box.h>
 
 #include "lidar.h"
+#include "pcl/filters/impl/filter.hpp"
+
+
 
 //points covariance class
 class Double2d{
@@ -36,8 +39,12 @@ class LaserProcessingClass
     public:
     	LaserProcessingClass();
 		void init(lidar::Lidar lidar_param_in);
-		void featureExtraction(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_edge, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_surf);
+    void featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_edge, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_surf);
 		void featureExtractionFromSector(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_edge, pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_out_surf);	
+    void RingExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> laserCloudScans);
+    void RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> laserCloudScans);
+
+
 	private:
      	lidar::Lidar lidar_param;
 };

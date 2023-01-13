@@ -63,6 +63,9 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
     std::fstream stream(filename.c_str(), std::fstream::out);
     std::cout << "clouds size: " <<clouds.size() << std::endl;;
     std::cout << "poses size: " <<poses.size() << std::endl;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
+
 
     for(int i = 0; i < poses.size() ; i++) {
         ros::Time tRos;
@@ -76,8 +79,18 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
                                 m(3,0) <<  "," << m(3,1) <<  "," << m(3,2) <<  "," << time <<  "," << endl;
         const std::string pcdPath = directory + std::string("full") + std::to_string(i) + ".pcd";
         pcl::io::savePCDFileBinary(pcdPath, *clouds[i]);
-
+        pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
+        pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
+        *merged_transformed += tmp_transformed;
     }
+    pcl::VoxelGrid<pcl::PointXYZI> sor;
+    sor.setInputCloud (merged_transformed);
+    sor.setLeafSize (0.05f, 0.05f, 0.05f);
+    sor.filter (merged_downsamapled);
+    pcl::io::savePCDFileBinary(directory + std::string("fmerged.pcd"), *merged_transformed);
+    pcl::io::savePCDFileBinary(directory + std::string("fmerged_downsampled.pcd"), merged_downsamapled);
+
+
 
 }
 void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
@@ -146,13 +159,13 @@ void odom_estimation(){
             transform.setOrigin( tf::Vector3(t_current.x(), t_current.y(), t_current.z()) );
             tf::Quaternion q(q_current.x(),q_current.y(),q_current.z(),q_current.w());
             transform.setRotation(q);
-            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "base_link"));
+            br.sendTransform(tf::StampedTransform(transform, pointcloud_time, "map", "base_link"));
 
             // publish odometry
             nav_msgs::Odometry laserOdometry;
             laserOdometry.header.frame_id = "map";
             laserOdometry.child_frame_id = "base_link";
-            laserOdometry.header.stamp = pointcloud_time;
+            laserOdometry.header.stamp = pointcloud_time; // ros::Time::now();
             laserOdometry.pose.pose.orientation.x = q_current.x();
             laserOdometry.pose.pose.orientation.y = q_current.y();
             laserOdometry.pose.pose.orientation.z = q_current.z();

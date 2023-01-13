@@ -251,6 +251,9 @@ int main(int argc, char **argv)
     ros::spin();
     SavePosesHomogeneousBALM(g_clouds, g_poses, directory);
 
+    std::cout << "output directory:\n" << std::endl;
+    std::cout << directory << std::endl;
+
     return 0;
 }
 

@@ -98,7 +98,7 @@ void OdomEstimationClass::downSamplingToMap(const pcl::PointCloud<pcl::PointXYZI
     downSizeFilterSurf.filter(*surf_pc_out);    
 }
 
-void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function){
+void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *_function){
     int corner_num=0;
     for (int i = 0; i < (int)pc_in->points.size(); i++)
     {

@@ -58,7 +58,7 @@ int total_frame=0;
 std::vector<Eigen::Affine3d> g_poses;
 std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> g_clouds;
 
-void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory){
+void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
     std::cout << "clouds size: " <<clouds.size() << std::endl;;
@@ -83,12 +83,21 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
         pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
         *merged_transformed += tmp_transformed;
     }
+    cout << "Downsample point cloud resolution " << downsample_size << endl;
     pcl::VoxelGrid<pcl::PointXYZI> sor;
     sor.setInputCloud (merged_transformed);
-    sor.setLeafSize (0.05f, 0.05f, 0.05f);
+    //sor.setMinimumPointsNumberPerVoxel(2);
+    sor.setLeafSize (downsample_size, downsample_size, downsample_size);
     sor.filter (merged_downsamapled);
+
     pcl::io::savePCDFileBinary(directory + std::string("fmerged.pcd"), *merged_transformed);
-    pcl::io::savePCDFileBinary(directory + std::string("fmerged_downsampled.pcd"), merged_downsamapled);
+    if(!merged_downsamapled.empty()){
+      pcl::io::savePCDFileBinary(directory + std::string("fmerged_downsampled.pcd"), merged_downsamapled);
+    }else{
+      std::cout << "No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
+    }
+
+
 
 
 
@@ -224,6 +233,7 @@ int main(int argc, char **argv)
     double max_dis = 60.0;
     double min_dis = 2.0;
     double map_resolution = 0.4;
+    double output_downsample_size = 0.05;
     nh.getParam("/scan_period", scan_period); 
     nh.getParam("/vertical_angle", vertical_angle); 
     nh.getParam("/max_dis", max_dis);
@@ -231,6 +241,7 @@ int main(int argc, char **argv)
     nh.getParam("/scan_line", scan_line);
     nh.getParam("/map_resolution", map_resolution);
     nh.getParam("/directory_output", directory);
+    nh.getParam("/output_downsample_size", output_downsample_size);
     directory = CreateFolder(directory);
 
 
@@ -249,7 +260,7 @@ int main(int argc, char **argv)
     std::thread odom_estimation_process{odom_estimation};
 
     ros::spin();
-    SavePosesHomogeneousBALM(g_clouds, g_poses, directory);
+    SavePosesHomogeneousBALM(g_clouds, g_poses, directory, output_downsample_size);
 
     std::cout << "output directory:\n" << std::endl;
     std::cout << directory << std::endl;

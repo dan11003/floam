@@ -80,6 +80,7 @@ void laser_processing(){
       mutex_lock.lock();
       pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
       pcl::PointCloud<vel_point::PointXYZIRT>::Ptr compensated(new pcl::PointCloud<vel_point::PointXYZIRT>());
+      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr imu_aligned(new pcl::PointCloud<vel_point::PointXYZIRT>());
       pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in);
       ros::Time pointcloud_time = (pointCloudBuf.front())->header.stamp;
       pointCloudBuf.pop();
@@ -90,7 +91,16 @@ void laser_processing(){
         std::cerr << "cannot compensate - no IMU data" << std::endl;
         continue;
       }
-      pointcloud_in = compensated;
+      Eigen::Quaterniond q(dmapping::Imu2Orientation(imuHandler.Get(pointcloud_time.toSec()))*exstrinsics);
+      Eigen::Affine3d ImuNowT(q);
+
+      pcl::transformPointCloud(*compensated, *imu_aligned, ImuNowT);
+      const ros::Time t = ros::Time::now();
+      PublishCloud("process1_uncompensated", *pointcloud_in, "sensor", t);
+      PublishCloud("process2_uncompensated", *compensated, "sensor", t);
+      PublishCloud("process3_prediction", *imu_aligned, "sensor", t);
+      pointcloud_in = imu_aligned;
+
 
       pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_edge(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_surf(new pcl::PointCloud<pcl::PointXYZI>());

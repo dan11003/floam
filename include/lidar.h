@@ -8,7 +8,8 @@
 #include "stdio.h"
 #include "pcl/point_types.h"
 #include "eigen3/Eigen/Dense"
-
+#include "pcl_ros/point_cloud.h"
+#include"pcl_ros/publisher.h"
 
 namespace vel_point{
 struct PointXYZIRT
@@ -31,6 +32,21 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRT,
                                   (float, time, time))
 
 Eigen::Quaterniond euler2Quaternion(const double roll, const double pitch, const double yaw);
+
+template<class T>
+void PublishCloud(const std::string& topic, pcl::PointCloud<T>& cloud, const std::string& frame_id, const ros::Time& t){
+
+  pcl_conversions::toPCL(t,cloud.header.stamp);
+  cloud.header.frame_id = frame_id;
+
+  static std::map<std::string, ros::Publisher> pubs;
+  std::map<std::string, ros::Publisher>::iterator it = pubs.find(topic);
+  static ros::NodeHandle nh("~");
+  if (it == pubs.end()){
+    pubs[topic] =  nh.advertise<pcl::PointCloud<T>>(topic,100);
+  }
+  pubs[topic].publish(cloud);
+}
 
 namespace lidar{
 

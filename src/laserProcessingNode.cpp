@@ -155,12 +155,15 @@ int main(int argc, char **argv)
   double scan_period= 0.1;
   double max_dis = 60.0;
   double min_dis = 2.0;
+  std::string imu_topic = "/imu/data";
+  std::string velodyne_topic = "/velodyne_points";
 
   nh.getParam("/scan_period", scan_period);
   nh.getParam("/vertical_angle", vertical_angle);
   nh.getParam("/max_dis", max_dis);
   nh.getParam("/min_dis", min_dis);
   nh.getParam("/scan_line", scan_line);
+  nh.getParam("/imu_topic", imu_topic);
 
   lidar_param.setScanPeriod(scan_period);
   lidar_param.setVerticalAngle(vertical_angle);
@@ -172,9 +175,11 @@ int main(int argc, char **argv)
 
   laserProcessing.init(lidar_param);
 
-  ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 100, velodyneHandler);
+  std::cout << "subscribe to Lidar data - topic: " << std::quoted(velodyne_topic) << std::endl;
+  ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(velodyne_topic, 100, velodyneHandler);
 
-  ros::Subscriber subIMU = nh.subscribe<sensor_msgs::Imu>("/imu/data", 100000, imuSubscriber);
+  std::cout << "subscribe to IMU data - topic: " << std::quoted(imu_topic) << std::endl;
+  ros::Subscriber subIMU = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100000, imuSubscriber);
 
   pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 100);
 

@@ -20,6 +20,8 @@
     <param name="vertical_angle" type="double" value="2.0" />
     <param name="map_resolution" type="double" value="0.5" />
     <param name="output_downsample_size" type="double" value="0.2" />
+    <param name="imu_topic" type="string" value="/nav/filtered_imu/data" />
+    <!--param name="imu_topic" type="string" value="/imu/data" /-->
 
 
     <param name="max_dis" type="double" value="90.0" />

@@ -234,6 +234,7 @@ int main(int argc, char **argv)
     double min_dis = 2.0;
     double map_resolution = 0.4;
     double output_downsample_size = 0.05;
+    std::string loss_function = "Huber";
     nh.getParam("/scan_period", scan_period); 
     nh.getParam("/vertical_angle", vertical_angle); 
     nh.getParam("/max_dis", max_dis);
@@ -242,6 +243,7 @@ int main(int argc, char **argv)
     nh.getParam("/map_resolution", map_resolution);
     nh.getParam("/directory_output", directory);
     nh.getParam("/output_downsample_size", output_downsample_size);
+    nh.getParam("/loss_function", loss_function);
     directory = CreateFolder(directory);
 
 
@@ -252,7 +254,7 @@ int main(int argc, char **argv)
     lidar_param.setMaxDistance(max_dis);
     lidar_param.setMinDistance(min_dis);
 
-    odomEstimation.init(lidar_param, map_resolution);
+    odomEstimation.init(lidar_param, map_resolution, loss_function);
     ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100, velodyneEdgeHandler);
     ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
 

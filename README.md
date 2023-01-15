@@ -12,10 +12,12 @@ This work is an optimized version of FLOAM which uses an IMU to aid odometry est
 - IMU is used to predict movement of sensor
     - This is quickly implemented directly in laserProcessingNode.cpp - a side effect is that estimated orientation will appear fixed.
 
+- Changed from Huber to Cauchy loss funciton. Cauchy should be 5-30% better with a good initial guess
+
 ### To do
 - Compesate for linear velocity - to gain up to 0.1m less noise for motion at 1m/s
 - Improve map represetation in scan matcher
-- Cauchy loss function in solver.
+
 
 
 

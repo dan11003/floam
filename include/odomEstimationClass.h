@@ -33,14 +33,14 @@
 #include "lidarOptimization.h"
 #include <ros/ros.h>
 #include <sstream>
-
+#include "string.h"
 class OdomEstimationClass 
 {
 
     public:
     	OdomEstimationClass();
     	
-		void init(lidar::Lidar lidar_param, double map_resolution);	
+    void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 		void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in);
 		void updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in);
 		void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
@@ -69,6 +69,9 @@ class OdomEstimationClass
 
 		//optimization count 
 		int optimization_count;
+
+    // Loss function in optimization
+    std::string loss_function_;
 
 		//function
 		void addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function);

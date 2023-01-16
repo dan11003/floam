@@ -305,7 +305,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<ve
     converted->header = VelCloud->header;
     for(int i = 0; i < converted->size() ; i++)
     {
-        converted->points[i].x = VelCloud->points[i].x; converted->points[i].y = VelCloud->points[i].y; converted->points[i].z = VelCloud->points[i].z;
+        converted->points[i].x = VelCloud->points[i].x; converted->points[i].y = VelCloud->points[i].y; converted->points[i].z = VelCloud->points[i].z; converted->points[i].intensity = VelCloud->points[i].intensity;
     }
     return converted;
 }

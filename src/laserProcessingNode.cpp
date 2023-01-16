@@ -62,6 +62,17 @@ void imuSubscriber(const sensor_msgs::Imu::ConstPtr& imuMsg){
 double total_time =0;
 int total_frame=0;
 
+void CenterTime(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr cloud){
+  ros::Time t;
+  pcl_conversions::fromPCL(cloud->header.stamp,t);
+  const double tScan = t.toSec();
+  const double tEnd = tScan + cloud->points.back().time;
+  const double tBegin = tScan + cloud->points.front().time;
+  std::cout << tEnd - tBegin << std::endl;
+  std::cout << tEnd << std::endl;
+  std::cout << tBegin << std::endl;
+
+}
 void laser_processing(){
 
   while(1){
@@ -82,6 +93,7 @@ void laser_processing(){
       pcl::PointCloud<vel_point::PointXYZIRT>::Ptr compensated(new pcl::PointCloud<vel_point::PointXYZIRT>());
       pcl::PointCloud<vel_point::PointXYZIRT>::Ptr imu_aligned(new pcl::PointCloud<vel_point::PointXYZIRT>());
       pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in);
+      CenterTime(pointcloud_in);
       ros::Time pointcloud_time = (pointCloudBuf.front())->header.stamp;
       pointCloudBuf.pop();
       mutex_lock.unlock();

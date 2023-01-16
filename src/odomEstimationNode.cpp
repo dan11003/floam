@@ -65,8 +65,8 @@ std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> g_clouds;
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
-    std::cout << "clouds size: " <<clouds.size() << std::endl;;
-    std::cout << "poses size: " <<poses.size() << std::endl;
+    std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
+    std::cout << "Saving poses size: " <<poses.size() << std::endl;
     pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
 
@@ -162,7 +162,8 @@ void odom_estimation(){
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
                 total_time+=time_temp;
-                ROS_INFO("average odom estimation time %f ms \n \n", total_time/total_frame);
+                ROS_INFO("average odom estimation time %f ms.\nMovement speed %lf m/s\n", total_time/total_frame, odomEstimation.GetVelocity().norm()/0.1);
+
             }
 
 
@@ -205,8 +206,6 @@ void odom_estimation(){
             Trans.block<3,1>(0,3) = t_current;
             Eigen::Affine3d eigTransformNow(Trans);
             g_poses.push_back(eigTransformNow);
-
-
 
         }
         //sleep 2 ms every time

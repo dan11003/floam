@@ -33,21 +33,22 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
 void OdomEstimationClass::UpdatePointsToMapSelector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
     ros::Time t0 = ros::Time::now();
     if(!deskew){
-        std::cout << "VANILLA" << std::endl;
+        //std::cout << "VANILLA" << std::endl;
         pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
         pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
         updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in);
         ros::Time t1 = ros::Time::now();
-        std::cout << "Registraiton time: " << t1-t0 << std::endl;
+        //std::cout << "Registraiton time: " << t1-t0 << std::endl;
     }else{
-        std::cout << "DESKEW" << std::endl;
+        //std::cout << "DESKEW" << std::endl;
         pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
         pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
         updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::INITIAL_ITERATION);
+        Eigen::Vector3d Velocity = GetVelocity();
         ros::Time t1 = ros::Time::now();
         updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::REFINEMENT_AND_UPDATE);
         ros::Time t2 = ros::Time::now();
-        cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
+        //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
     }
 }
 

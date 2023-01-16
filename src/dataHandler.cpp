@@ -79,7 +79,9 @@ bool ImuHandler::TimeContained(const double t)const{
   else
     return false;
 }
+bool CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, const Eigen::Vector3d& velocity){
 
+}
 bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics){
 
   compensated.resize(input.size());
@@ -106,7 +108,7 @@ bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<v
     compensated.points[i].ring = input.points[i].ring; compensated.points[i].time = input.points[i].time; compensated.points[i].intensity = input.points[i].intensity;
   }
   ros::Time tr1 = ros::Time::now();
-  std::cout << "time elapse: " << tr1-tr0 << std::endl;
+  //std::cout << "time elapse: " << tr1-tr0 << std::endl;
   return true;
 
 }

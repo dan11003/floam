@@ -103,7 +103,7 @@ bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<v
     const Eigen::Quaterniond qDiff = qInitInv*qNow;
     const Eigen::Vector3d pTransformed = qDiff*Eigen::Vector3d(input.points[i].x, input.points[i].y, input.points[i].z);
     compensated.points[i].x = pTransformed(0); compensated.points[i].y = pTransformed(1); compensated.points[i].z = pTransformed(2);
-    compensated.points[i].ring = input.points[i].ring; compensated.points[i].time = input.points[i].time;
+    compensated.points[i].ring = input.points[i].ring; compensated.points[i].time = input.points[i].time; compensated.points[i].intensity = input.points[i].intensity;
   }
   ros::Time tr1 = ros::Time::now();
   std::cout << "time elapse: " << tr1-tr0 << std::endl;

@@ -32,6 +32,8 @@
 
 using std::endl;
 using std::cout;
+
+bool deskew = false;
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
@@ -39,6 +41,8 @@ std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
 lidar::Lidar lidar_param;
 
 ros::Publisher pubLaserOdometry;
+ros::Publisher pubCloud;
+
 void velodyneSurfHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 {
     mutex_lock.lock();
@@ -126,9 +130,9 @@ void odom_estimation(){
             }
             //if time aligned 
 
-            pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_surf_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_edge_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::PointCloud<pcl::PointXYZI>::Ptr merged(new pcl::PointCloud<pcl::PointXYZI>());
+            pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
+            pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_surf_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
+            pcl::PointCloud<vel_point::PointXYZIRT>::Ptr merged(new pcl::PointCloud<vel_point::PointXYZIRT>());
 
 
             pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in);
@@ -141,14 +145,18 @@ void odom_estimation(){
             pointCloudSurfBuf.pop();
             mutex_lock.unlock();
 
+
+            //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
             if(is_odom_inited == false){
-                odomEstimation.initMapWithPoints(pointcloud_edge_in, pointcloud_surf_in);
+                pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(pointcloud_edge_in);
+                pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(pointcloud_surf_in);
+                odomEstimation.initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in);
                 is_odom_inited = true;
                 ROS_INFO("odom inited");
             }else{
                 std::chrono::time_point<std::chrono::system_clock> start, end;
                 start = std::chrono::system_clock::now();
-                odomEstimation.updatePointsToMap(pointcloud_edge_in, pointcloud_surf_in);
+                odomEstimation.UpdatePointsToMapSelector(pointcloud_edge_in, pointcloud_surf_in, deskew);
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<float> elapsed_seconds = end - start;
                 total_frame++;
@@ -163,12 +171,14 @@ void odom_estimation(){
             //q_current.normalize();
             Eigen::Vector3d t_current = odomEstimation.odom.translation();
 
+            const ros::Time tNow = ros::Time::now();
             static tf::TransformBroadcaster br;
             tf::Transform transform;
             transform.setOrigin( tf::Vector3(t_current.x(), t_current.y(), t_current.z()) );
             tf::Quaternion q(q_current.x(),q_current.y(),q_current.z(),q_current.w());
             transform.setRotation(q);
             br.sendTransform(tf::StampedTransform(transform, pointcloud_time, "map", "base_link"));
+            br.sendTransform(tf::StampedTransform(transform, tNow, "map", "sensor"));
 
             // publish odometry
             nav_msgs::Odometry laserOdometry;
@@ -183,7 +193,11 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.y = t_current.y();
             laserOdometry.pose.pose.position.z = t_current.z();
             pubLaserOdometry.publish(laserOdometry);
-            g_clouds.push_back(merged);
+            g_clouds.push_back(VelToIntensityCopy(merged));
+
+            pcl_conversions::toPCL(tNow, merged->header.stamp);
+            merged->header.frame_id = "sensor";
+            pubCloud.publish(merged);
 
             Eigen::Matrix4d Trans; // Your Transformation Matrix
             Trans.setIdentity();   // Set to Identity to make bottom row of Matrix 0,0,0,1
@@ -244,6 +258,7 @@ int main(int argc, char **argv)
     nh.getParam("/directory_output", directory);
     nh.getParam("/output_downsample_size", output_downsample_size);
     nh.getParam("/loss_function", loss_function);
+    nh.getParam("/deskew", deskew);
     directory = CreateFolder(directory);
 
 
@@ -259,6 +274,7 @@ int main(int argc, char **argv)
     ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
 
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
+    pubCloud = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/scan_registered", 100);
     std::thread odom_estimation_process{odom_estimation};
 
     ros::spin();

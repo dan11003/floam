@@ -1,4 +1,4 @@
-// Author of FLOAM: Wang Han 
+// Author of FLOAM: Wang Han
 // Email wh200720041@gmail.com
 // Homepage https://wanghan.pro
 
@@ -61,7 +61,9 @@ void imuSubscriber(const sensor_msgs::Imu::ConstPtr& imuMsg){
 
 double total_time =0;
 int total_frame=0;
+void Publish(){
 
+}
 void laser_processing(){
 
   while(1){
@@ -102,8 +104,8 @@ void laser_processing(){
       pointcloud_in = imu_aligned;
 
 
-      pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_edge(new pcl::PointCloud<pcl::PointXYZI>());
-      pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_surf(new pcl::PointCloud<pcl::PointXYZI>());
+      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge(new pcl::PointCloud<vel_point::PointXYZIRT>());
+      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_surf(new pcl::PointCloud<vel_point::PointXYZIRT>());
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -116,26 +118,29 @@ void laser_processing(){
       //ROS_INFO("average laser processing time %f ms \n \n", total_time/total_frame);
 
       sensor_msgs::PointCloud2 laserCloudFilteredMsg;
-      pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_filtered(new pcl::PointCloud<pcl::PointXYZI>());
+      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_filtered(new pcl::PointCloud<vel_point::PointXYZIRT>());
       *pointcloud_filtered+=*pointcloud_edge;
       *pointcloud_filtered+=*pointcloud_surf;
-      pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);
+      /*pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);
       laserCloudFilteredMsg.header.stamp = pointcloud_time;
       laserCloudFilteredMsg.header.frame_id = "base_link";
-      pubLaserCloudFiltered.publish(laserCloudFilteredMsg);
+      pubLaserCloudFiltered.publish(laserCloudFilteredMsg);*/
+      PublishCloud("/velodyne_points_filtered", *pointcloud_filtered, "base_link", pointcloud_time);
 
-      sensor_msgs::PointCloud2 edgePointsMsg;
+      PublishCloud("/laser_cloud_edge", *pointcloud_edge, "base_link", pointcloud_time);
+      /*sensor_msgs::PointCloud2 edgePointsMsg;
       pcl::toROSMsg(*pointcloud_edge, edgePointsMsg);
       edgePointsMsg.header.stamp = pointcloud_time;
       edgePointsMsg.header.frame_id = "base_link";
-      pubEdgePoints.publish(edgePointsMsg);
+      pubEdgePoints.publish(edgePointsMsg);*/
 
 
-      sensor_msgs::PointCloud2 surfPointsMsg;
+      PublishCloud("/laser_cloud_surf", *pointcloud_surf, "base_link", pointcloud_time);
+      /*sensor_msgs::PointCloud2 surfPointsMsg;
       pcl::toROSMsg(*pointcloud_surf, surfPointsMsg);
       surfPointsMsg.header.stamp = pointcloud_time;
       surfPointsMsg.header.frame_id = "base_link";
-      pubSurfPoints.publish(surfPointsMsg);
+      pubSurfPoints.publish(surfPointsMsg);*/
 
     }
     //sleep 2 ms every time
@@ -181,11 +186,11 @@ int main(int argc, char **argv)
   std::cout << "subscribe to IMU data - topic: " << std::quoted(imu_topic) << std::endl;
   ros::Subscriber subIMU = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100000, imuSubscriber);
 
-  pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 100);
+  /*pubLaserCloudFiltered = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/velodyne_points_filtered", 100);
 
-  pubEdgePoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100);
+  pubEdgePoints = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/laser_cloud_edge", 100);
 
-  pubSurfPoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100);
+  pubSurfPoints = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/laser_cloud_surf", 100);*/
 
   std::thread laser_processing_process{laser_processing};
 

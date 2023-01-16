@@ -30,15 +30,40 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
   optimization_count=12;
 }
 
+void OdomEstimationClass::UpdatePointsToMapSelector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
+    ros::Time t0 = ros::Time::now();
+    if(!deskew){
+        std::cout << "VANILLA" << std::endl;
+        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
+        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
+        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in);
+        ros::Time t1 = ros::Time::now();
+        std::cout << "Registraiton time: " << t1-t0 << std::endl;
+    }else{
+        std::cout << "DESKEW" << std::endl;
+        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
+        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
+        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::INITIAL_ITERATION);
+        ros::Time t1 = ros::Time::now();
+        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::REFINEMENT_AND_UPDATE);
+        ros::Time t2 = ros::Time::now();
+        cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
+    }
+}
 
-void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
+
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type){
 
   if(optimization_count>2)
     optimization_count--;
 
   Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
-  last_odom = odom;
-  odom = odom_prediction;
+  if( update_type == UpdateType::VANILLA || UpdateType::INITIAL_ITERATION ){
+    last_odom = odom;
+    odom = odom_prediction;
+  }else if(update_type == UpdateType::REFINEMENT_AND_UPDATE){ // last_odom already correct, odom already set to registration before unwarp
+
+  }
 
   q_w_curr = Eigen::Quaterniond(odom.rotation());
   t_w_curr = odom.translation();
@@ -87,7 +112,9 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
   odom = Eigen::Isometry3d::Identity();
   odom.linear() = q_w_curr.toRotationMatrix();
   odom.translation() = t_w_curr;
-  addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+  if( update_type == UpdateType::VANILLA || UpdateType::REFINEMENT_AND_UPDATE){
+    addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+  }
 
 }
 
@@ -268,4 +295,16 @@ void OdomEstimationClass::getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserClou
 
 OdomEstimationClass::OdomEstimationClass(){
 
+}
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr VelCloud){
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr converted(new pcl::PointCloud<pcl::PointXYZI>());
+    converted->resize(VelCloud->size());
+    converted->header = VelCloud->header;
+    for(int i = 0; i < converted->size() ; i++)
+    {
+        converted->points[i].x = VelCloud->points[i].x; converted->points[i].y = VelCloud->points[i].y; converted->points[i].z = VelCloud->points[i].z;
+    }
+    return converted;
 }

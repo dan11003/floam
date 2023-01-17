@@ -133,17 +133,20 @@ void odom_estimation(){
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_surf_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr merged(new pcl::PointCloud<vel_point::PointXYZIRT>());
+            pcl::PointCloud<vel_point::PointXYZIRT>::Ptr merged_raw(new pcl::PointCloud<vel_point::PointXYZIRT>());
 
 
             pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in);
             pcl::fromROSMsg(*pointCloudSurfBuf.front(), *pointcloud_surf_in);
-            *merged += *pointcloud_surf_in;
-            *merged += *pointcloud_edge_in;
             pcl_conversions::toPCL(pointCloudEdgeBuf.front()->header.stamp, merged->header.stamp);
+            pcl_conversions::toPCL(pointCloudEdgeBuf.front()->header.stamp, merged_raw->header.stamp);
             ros::Time pointcloud_time = (pointCloudSurfBuf.front())->header.stamp;
             pointCloudEdgeBuf.pop();
             pointCloudSurfBuf.pop();
             mutex_lock.unlock();
+
+            *merged_raw += *pointcloud_edge_in;
+            *merged_raw += *pointcloud_surf_in;
 
 
             //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
@@ -162,9 +165,10 @@ void odom_estimation(){
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
                 total_time+=time_temp;
-                ROS_INFO("average odom estimation time %f ms.\nMovement speed %lf m/s\n", total_time/total_frame, odomEstimation.GetVelocity().norm()/0.1);
-
+                ROS_INFO("average odom estimation time %f ms.\nMovement speed %lf m/s\n", total_time/total_frame, odomEstimation.GetVelocity().norm());
             }
+            *merged += *pointcloud_surf_in;
+            *merged += *pointcloud_edge_in;
 
 
 
@@ -199,6 +203,7 @@ void odom_estimation(){
             pcl_conversions::toPCL(tNow, merged->header.stamp);
             merged->header.frame_id = "sensor";
             pubCloud.publish(merged);
+            PublishCloud("/scan_registered_uncompensated", *merged_raw, "sensor", tNow);
 
             Eigen::Matrix4d Trans; // Your Transformation Matrix
             Trans.setIdentity();   // Set to Identity to make bottom row of Matrix 0,0,0,1

@@ -20,7 +20,7 @@
     <param name="vertical_angle" type="double" value="2.0" />
     <param name="map_resolution" type="double" value="0.5" />
     <param name="output_downsample_size" type="double" value="0.3" />
-    <param name="deskew" type="bool" value="false" />
+    <param name="deskew" type="bool" value="true" />
 
     <param name="imu_topic" type="string" value="/nav/filtered_imu/data" /> <!-- Structor FLOAM -->
     <!--param name="imu_topic" type="string" value="/imu/data" /-->  <!-- Structor FLOAM -->

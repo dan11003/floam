@@ -10,9 +10,11 @@
 #include "lidar.h"
 //#include <dmapping/utility.h>
 #include "math.h"
-
+using std::cout;
+using std::endl;
 
 /* A steam of time stamped data  for lookup*/
+#define SCAN_RATE 10.0
 namespace dmapping {
 
 
@@ -60,6 +62,8 @@ private:
 };
 
 bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics);
+
+void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr input, const Eigen::Vector3d& velocity);
 
 
 }

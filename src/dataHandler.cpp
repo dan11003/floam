@@ -79,7 +79,15 @@ bool ImuHandler::TimeContained(const double t)const{
   else
     return false;
 }
-bool CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, const Eigen::Vector3d& velocity){
+void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr input, const Eigen::Vector3d& velocity){
+
+  for(auto && pnt : input->points){
+    const double tPoint = pnt.time;
+    const Eigen::Vector3d pntPosition(pnt.x, pnt.y, pnt.z);
+    const Eigen::Vector3d pntError = velocity*tPoint; // Compute the error from movement and scan rate
+    const Eigen::Vector3d pntCompensated = pntPosition + pntError; // remove the error
+    pnt.x = pntCompensated(0); pnt.y = pntCompensated(1); pnt.z = pntCompensated(2);
+  }
 
 }
 bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics){

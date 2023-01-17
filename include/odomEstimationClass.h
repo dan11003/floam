@@ -31,6 +31,7 @@
 //LOCAL LIB
 #include "lidar.h"
 #include "lidarOptimization.h"
+#include "dataHandler.h"
 #include <ros/ros.h>
 #include <sstream>
 #include "string.h"
@@ -50,7 +51,7 @@ class OdomEstimationClass
 
     void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in);
 
-    void UpdatePointsToMapSelector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew);
+    void UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew);
 
     /*!
          * \brief updatePointsToMap
@@ -60,9 +61,11 @@ class OdomEstimationClass
          */
     void updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
 
+    void updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
+
     void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
 
-    Eigen::Vector3d GetVelocity(){return odom.translation() - last_odom.translation();}
+    Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
 
 
 
@@ -93,6 +96,8 @@ private:
 
     // Loss function in optimization
     std::string loss_function_;
+
+    lidar::Lidar lidar_param_;
 
     //function
     void addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function);

@@ -22,6 +22,7 @@ void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution, 
   optimization_count=2;
   loss_function_ = boost::algorithm::to_lower_copy(loss_function);
   std::cout << "Use loss function: " << loss_function_ << std::endl;
+  lidar_param_ = lidar_param;
 }
 
 void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
@@ -30,29 +31,33 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
   optimization_count=12;
 }
 
-void OdomEstimationClass::UpdatePointsToMapSelector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
+void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
     ros::Time t0 = ros::Time::now();
     if(!deskew){
         //std::cout << "VANILLA" << std::endl;
-        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
-        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
-        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in);
+        updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
         ros::Time t1 = ros::Time::now();
         //std::cout << "Registraiton time: " << t1-t0 << std::endl;
     }else{
         //std::cout << "DESKEW" << std::endl;
-        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
-        pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
-        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::INITIAL_ITERATION);
-        Eigen::Vector3d Velocity = GetVelocity();
+        updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
+        Eigen::Vector3d velocity = GetVelocity();
+        //std::cout <<  "deskrew scan distortion: " << velocity.norm()  << std::endl;
+        dmapping::CompensateVelocity(edge_in, velocity);
+        dmapping::CompensateVelocity(surf_in, velocity);
+
         ros::Time t1 = ros::Time::now();
-        updatePointsToMap(uncompensated_edge_in, uncompensated_surf_in, UpdateType::REFINEMENT_AND_UPDATE);
+        updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
         ros::Time t2 = ros::Time::now();
         //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
     }
 }
 
-
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type){
+  pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in_XYZI = VelToIntensityCopy(surf_in);
+  updatePointsToMap(edge_in_XYZI, surf_in_XYZI, update_type);
+}
 void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type){
 
   if(optimization_count>2)

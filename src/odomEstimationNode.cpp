@@ -39,9 +39,9 @@ std::mutex mutex_lock;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
 lidar::Lidar lidar_param;
+Dump dataStorage;
 
 ros::Publisher pubLaserOdometry;
-ros::Publisher pubCloud;
 
 void velodyneSurfHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 {
@@ -59,8 +59,9 @@ void velodyneEdgeHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 bool is_odom_inited = false;
 double total_time =0;
 int total_frame=0;
-std::vector<Eigen::Affine3d> g_poses;
-std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> g_clouds;
+
+
+
 
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
     const std::string filename = directory + "alidarPose.csv";
@@ -198,19 +199,24 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.y = t_current.y();
             laserOdometry.pose.pose.position.z = t_current.z();
             pubLaserOdometry.publish(laserOdometry);
-            g_clouds.push_back(VelToIntensityCopy(merged));
 
-            pcl_conversions::toPCL(tNow, merged->header.stamp);
-            merged->header.frame_id = "sensor";
-            pubCloud.publish(merged);
-            PublishCloud("/scan_registered_uncompensated", *merged_raw, "sensor", tNow);
+            PublishCloud("/scan_registered", *merged, "sensor", tNow);
+
+            //PublishCloud("/scan_registered_uncompensated", *merged_raw, "sensor", tNow);
 
             Eigen::Matrix4d Trans; // Your Transformation Matrix
             Trans.setIdentity();   // Set to Identity to make bottom row of Matrix 0,0,0,1
             Trans.block<3,3>(0,0) = q_current.toRotationMatrix();;
             Trans.block<3,1>(0,3) = t_current;
             Eigen::Affine3d eigTransformNow(Trans);
-            g_poses.push_back(eigTransformNow);
+
+            pcl_conversions::toPCL(pointcloud_time,merged->header.stamp);
+
+            dataStorage.poses.push_back(eigTransformNow);
+            dataStorage.clouds.push_back(VelToIntensityCopy(merged));
+            dataStorage.keyframe_stamps.push_back(pointcloud_time.toSec());
+            //storeage.push_back(VelToIntensityCopy(merged));
+            //g_poses.push_back(eigTransformNow);
 
         }
         //sleep 2 ms every time
@@ -253,6 +259,10 @@ int main(int argc, char **argv)
     double map_resolution = 0.4;
     double output_downsample_size = 0.05;
     std::string loss_function = "Huber";
+    bool save_Posegraph = false;
+    bool save_BALM = true;
+
+
     nh.getParam("/scan_period", scan_period); 
     nh.getParam("/vertical_angle", vertical_angle); 
     nh.getParam("/max_dis", max_dis);
@@ -263,6 +273,8 @@ int main(int argc, char **argv)
     nh.getParam("/output_downsample_size", output_downsample_size);
     nh.getParam("/loss_function", loss_function);
     nh.getParam("/deskew", deskew);
+    nh.getParam("/save_BALM", save_BALM);
+    nh.getParam("/save_Posegraph", save_Posegraph);
     directory = CreateFolder(directory);
 
 
@@ -278,14 +290,19 @@ int main(int argc, char **argv)
     ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
 
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
-    pubCloud = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/scan_registered", 100);
     std::thread odom_estimation_process{odom_estimation};
 
     ros::spin();
-    SavePosesHomogeneousBALM(g_clouds, g_poses, directory, output_downsample_size);
 
-    std::cout << "output directory:\n" << std::endl;
-    std::cout << directory << std::endl;
+    std::cout << "output directory: " << directory << std::endl;
+    if(save_BALM){
+      cout << "Save BALM data " << endl;
+      SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
+    }
+    if(save_Posegraph){
+      cout << "Save Posegraph" << endl;
+      SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
+    }
 
     return 0;
 }

@@ -35,6 +35,7 @@
 #include <ros/ros.h>
 #include <sstream>
 #include "string.h"
+#include "utils.h"
 using std::cout;
 using std::endl;
 pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr VelCloud);

@@ -34,15 +34,11 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
 void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
     ros::Time t0 = ros::Time::now();
     if(!deskew){
-        //std::cout << "VANILLA" << std::endl;
         updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
         ros::Time t1 = ros::Time::now();
-        //std::cout << "Registraiton time: " << t1-t0 << std::endl;
     }else{
-        //std::cout << "DESKEW" << std::endl;
         updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
         Eigen::Vector3d velocity = GetVelocity();
-        //std::cout <<  "deskrew scan distortion: " << velocity.norm()  << std::endl;
         dmapping::CompensateVelocity(edge_in, velocity);
         dmapping::CompensateVelocity(surf_in, velocity);
 

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="save_Posegraph" default="false" />
+    <arg name="save_posegraph" default="false" />
     
     <!-- For Velodyne VLP-16 -->
     <param name="scan_line" value="16" />
@@ -30,7 +30,7 @@
     <!--param name="loss_function" type="string" value="Cauchy" /-->  <!-- Structor FLOAM -->
 
     <param name="save_BALM" type="bool" value="true" />
-    <param name="save_Posegraph" type="bool" value="$(arg save_Posegraph)" />
+    <param name="save_Posegraph" type="bool" value="$(arg save_posegraph)" />
 
 
 

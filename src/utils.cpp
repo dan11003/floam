@@ -59,7 +59,7 @@ void SavePosegraph(
   std::cout << "Save clouds: " << clouds.size() << std::endl;
   for(int i = 0; i < clouds.size(); i++) {
     std::string keyframe_directory = (boost::format("%s/%06d") % dump_directory % i).str();
-    std::cout <<std::endl << "i: " << i << keyframe_directory  << std::endl;
+    //std::cout <<std::endl << "i: " << i << keyframe_directory  << std::endl;
     boost::filesystem::create_directories(keyframe_directory);
     // cloud = transformPointCloud(cloud, keyframe_poses[i]);
     pcl::io::savePCDFileBinary(keyframe_directory + "/cloud.pcd", *clouds[i]);

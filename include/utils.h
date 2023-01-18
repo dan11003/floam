@@ -14,8 +14,11 @@
 #include <pcl/common/transforms.h>
 
 #include <boost/filesystem.hpp>
+using boost::format;
+using boost::io::group;
 
 
+using std::cout; using std::cerr; using std::endl;
 typedef struct
 {
   std::string dump_directory;
@@ -26,6 +29,12 @@ typedef struct
 }Dump;
 
 void SavePosegraph(
+    const std::string& dump_directory,
+    const std::vector<Eigen::Affine3d>& poses,
+    const std::vector<double>& keyframe_stamps,
+    const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds);
+
+void SaveOdom(
     const std::string& dump_directory,
     const std::vector<Eigen::Affine3d>& poses,
     const std::vector<double>& keyframe_stamps,

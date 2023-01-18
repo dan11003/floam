@@ -64,6 +64,7 @@ int total_frame=0;
 
 
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
+    boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
     std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
@@ -261,6 +262,7 @@ int main(int argc, char **argv)
     std::string loss_function = "Huber";
     bool save_Posegraph = false;
     bool save_BALM = true;
+    bool save_odom = false;
 
 
     nh.getParam("/scan_period", scan_period); 
@@ -275,6 +277,7 @@ int main(int argc, char **argv)
     nh.getParam("/deskew", deskew);
     nh.getParam("/save_BALM", save_BALM);
     nh.getParam("/save_Posegraph", save_Posegraph);
+    nh.getParam("/save_odom", save_odom);
     directory = CreateFolder(directory);
 
 
@@ -297,11 +300,15 @@ int main(int argc, char **argv)
     std::cout << "output directory: " << directory << std::endl;
     if(save_BALM){
       cout << "Save BALM data " << endl;
-      SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
+      SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
     }
     if(save_Posegraph){
       cout << "Save Posegraph" << endl;
       SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
+    }
+    if(save_odom){
+      cout << "Save Posegraph" << endl;
+      SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
     }
 
     return 0;

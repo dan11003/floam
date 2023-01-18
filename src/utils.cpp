@@ -74,3 +74,31 @@ void SavePosegraph(
     data_ofs << "id " << i << "\n";
   }
 }
+
+
+void SaveOdom(
+    const std::string& dump_drectory,
+    const std::vector<Eigen::Affine3d>& poses,
+    const std::vector<double>& keyframe_stamps,
+    const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds){
+
+  boost::filesystem::create_directories(dump_drectory);
+
+  std::cout << "Save clouds: " << clouds.size() << std::endl;
+  for(int i = 0; i < clouds.size(); i++) {
+
+    ros::Time t(keyframe_stamps[i]);
+    std::string filename = dump_drectory + str( boost::format("/%lf_%lf") % t.sec % t.nsec);
+
+    pcl::io::savePCDFileBinary( filename + ".pcd", *clouds[i]);
+
+    std::ofstream data_ofs(filename + ".odom");
+    Eigen::Matrix<double,4,4> mat = poses[i].matrix();
+    data_ofs << mat(0,0) << " " << mat(0,1) << " " << mat(0,2) << " " << mat(0,3) << std::endl;
+    data_ofs << mat(1,0) << " " << mat(1,1) << " " << mat(1,2) << " " << mat(1,3) << std::endl;
+    data_ofs << mat(2,0) << " " << mat(2,1) << " " << mat(2,2) << " " << mat(2,3) << std::endl;
+    data_ofs << mat(3,0) << " " << mat(3,1) << " " << mat(3,2) << " " << mat(3,3) << std::endl;
+    data_ofs.close();
+  }
+}
+

@@ -62,7 +62,35 @@ int total_frame=0;
 
 
 
+void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
+  boost::filesystem::create_directories(directory);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
 
+
+  for(int i = 0; i < poses.size() ; i++) {
+      pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
+      pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
+      *merged_transformed += tmp_transformed;
+  }
+  cout << "Downsample point cloud resolution " << downsample_size << endl;
+  pcl::VoxelGrid<pcl::PointXYZI> sor;
+  sor.setInputCloud (merged_transformed);
+  sor.setLeafSize (downsample_size, downsample_size, downsample_size);
+  sor.filter (merged_downsamapled);
+
+  pcl::io::savePCDFileBinary(directory + std::string("floam_merged.pcd"), *merged_transformed);
+  if(!merged_downsamapled.empty()){
+    const std::string path_downsampled = directory + std::string("floam_merged_downsampled_leaf_") + std::to_string(downsample_size) + ".pcd";
+    pcl::io::savePCDFileBinary(path_downsampled, merged_downsamapled);
+  }else{
+    std::cout << "No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
+  }
+
+
+
+
+}
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
     boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
@@ -85,28 +113,7 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
                                 m(3,0) <<  "," << m(3,1) <<  "," << m(3,2) <<  "," << time <<  "," << endl;
         const std::string pcdPath = directory + std::string("full") + std::to_string(i) + ".pcd";
         pcl::io::savePCDFileBinary(pcdPath, *clouds[i]);
-        pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
-        pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
-        *merged_transformed += tmp_transformed;
     }
-    cout << "Downsample point cloud resolution " << downsample_size << endl;
-    pcl::VoxelGrid<pcl::PointXYZI> sor;
-    sor.setInputCloud (merged_transformed);
-    //sor.setMinimumPointsNumberPerVoxel(2);
-    sor.setLeafSize (downsample_size, downsample_size, downsample_size);
-    sor.filter (merged_downsamapled);
-
-    pcl::io::savePCDFileBinary(directory + std::string("fmerged.pcd"), *merged_transformed);
-    if(!merged_downsamapled.empty()){
-      pcl::io::savePCDFileBinary(directory + std::string("fmerged_downsampled.pcd"), merged_downsamapled);
-    }else{
-      std::cout << "No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
-    }
-
-
-
-
-
 }
 void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
 
@@ -298,6 +305,7 @@ int main(int argc, char **argv)
     ros::spin();
 
     std::cout << "output directory: " << directory << std::endl;
+    SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
     if(save_BALM){
       cout << "Save BALM data " << endl;
       SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);

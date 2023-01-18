@@ -66,7 +66,7 @@ void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, 
   boost::filesystem::create_directories(directory);
   pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
-
+  std::cout << "Save merged point cloud to:\n" << directory << std::endl <<  std::endl;
 
   for(int i = 0; i < poses.size() ; i++) {
       pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
@@ -95,8 +95,9 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
     boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
-    std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
-    std::cout << "Saving poses size: " <<poses.size() << std::endl;
+    std::cout << "Save BALM to:\n" << directory << std::endl << std::endl;
+    /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
+    std::cout << "Saving poses size: " <<poses.size() << std::endl;*/
     pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
 
@@ -305,17 +306,18 @@ int main(int argc, char **argv)
     ros::spin();
 
     std::cout << "output directory: " << directory << std::endl;
+    std::cout << "Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
     SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
     if(save_BALM){
-      cout << "Save BALM data " << endl;
+      //cout << "Save BALM data " << endl;
       SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
     }
     if(save_Posegraph){
-      cout << "Save Posegraph" << endl;
+      //cout << "Save Posegraph" << endl;
       SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
     }
     if(save_odom){
-      cout << "Save Posegraph" << endl;
+      //cout << "Save Posegraph" << endl;
       SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
     }
 

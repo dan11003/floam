@@ -6,6 +6,8 @@ void SavePosegraph(
     const std::vector<double>& keyframe_stamps,
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds){
 
+  std::cout << "Save posegraph to:\n" << dump_directory << std::endl << std::endl;
+
   boost::filesystem::create_directories(dump_directory);
   std::ofstream graph_ofs(dump_directory + "/graph.g2o");
   unsigned int count = 0;
@@ -18,7 +20,7 @@ void SavePosegraph(
   }
   graph_ofs << "FIX 0" << "\n";
 
-  std::cout << "factors:" << poses.size() -1 << std::endl;
+  //std::cout << "factors:" << poses.size() -1 << std::endl;
   const int last = poses.size() - 1;
   if(poses.size () <= 1){
     std::cerr << "cannot save a pose graph with only 1 vertex" << std::endl;
@@ -48,7 +50,7 @@ void SavePosegraph(
     for(int i = 0; i < inf.rows(); i++) {
       for(int j=i; j<inf.cols(); j++) {
         graph_ofs << " " << inf(i, j);
-        std::cout << " " << inf(i, j);
+        //std::cout << " " << inf(i, j);
       }
     }
     graph_ofs << "\n";
@@ -56,7 +58,7 @@ void SavePosegraph(
 
   graph_ofs.close();
 
-  std::cout << "Save clouds: " << clouds.size() << std::endl;
+  //std::cout << "Save clouds: " << clouds.size() << std::endl;
   for(int i = 0; i < clouds.size(); i++) {
     std::string keyframe_directory = (boost::format("%s/%06d") % dump_directory % i).str();
     //std::cout <<std::endl << "i: " << i << keyframe_directory  << std::endl;
@@ -77,18 +79,19 @@ void SavePosegraph(
 
 
 void SaveOdom(
-    const std::string& dump_drectory,
+    const std::string& dump_directory,
     const std::vector<Eigen::Affine3d>& poses,
     const std::vector<double>& keyframe_stamps,
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds){
 
-  boost::filesystem::create_directories(dump_drectory);
+  boost::filesystem::create_directories(dump_directory);
 
-  std::cout << "Save clouds: " << clouds.size() << std::endl;
+  std::cout << "Save odom to:\n" << dump_directory << std::endl << std::endl;
+  //std::cout << "Save clouds: " << clouds.size() << std::endl;
   for(int i = 0; i < clouds.size(); i++) {
 
     ros::Time t(keyframe_stamps[i]);
-    std::string filename = dump_drectory + str( boost::format("/%lf_%lf") % t.sec % t.nsec);
+    std::string filename = dump_directory + str( boost::format("/%lf_%lf") % t.sec % t.nsec);
 
     pcl::io::savePCDFileBinary( filename + ".pcd", *clouds[i]);
 

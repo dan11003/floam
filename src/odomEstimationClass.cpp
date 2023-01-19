@@ -87,7 +87,7 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
       }
       else{
         //std::cout << "Cauchy" << std::endl;
-        new ceres::CauchyLoss(0.2) ;
+        new ceres::CauchyLoss(0.2); // why 0.2? https://arxiv.org/pdf/2211.02445.pdf Fig.12 //daniel
       }
       ceres::Problem::Options problem_options;
       ceres::Problem problem(problem_options);

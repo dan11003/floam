@@ -102,7 +102,7 @@ void laser_processing(){
       pointCloudBuf.pop();
       mutex_lock.unlock();
 
-      std::cout << pointcloud_time << std::endl;
+      //std::cout << pointcloud_time << std::endl;
 
 
       bool can_compensate = dmapping::Compensate(*pointcloud_in, *compensated, imuHandler, exstrinsics);

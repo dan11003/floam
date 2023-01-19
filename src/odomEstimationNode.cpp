@@ -40,6 +40,7 @@ std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
 lidar::Lidar lidar_param;
 Dump dataStorage;
+bool keep_running = true;
 
 ros::Publisher pubLaserOdometry;
 
@@ -120,11 +121,18 @@ void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
 
 }
 void odom_estimation(){
-    while(1){
+    ros::Time tPrev = ros::Time::now();
+    while(ros::ok()){
+        if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(1.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
+            keep_running = false;
+            std::cout << "No more data to process \"odomEstimationNode.cpp\"" << std::endl;
+            break;
+        }
         if(!pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty()){
 
             //read data
             mutex_lock.lock();
+            std::cout <<"Odom - Queue: " << pointCloudSurfBuf.size() << std::endl;
             if(!pointCloudSurfBuf.empty() && (pointCloudSurfBuf.front()->header.stamp.toSec()<pointCloudEdgeBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
                 pointCloudSurfBuf.pop();
                 ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
@@ -138,6 +146,7 @@ void odom_estimation(){
                 mutex_lock.unlock();
                 continue;  
             }
+            tPrev = ros::Time::now();
             //if time aligned 
 
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
@@ -175,7 +184,8 @@ void odom_estimation(){
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
                 total_time+=time_temp;
-                ROS_INFO("average odom estimation time %f ms.\nMovement speed %lf m/s\n", total_time/total_frame, odomEstimation.GetVelocity().norm());
+                ROS_INFO("Frame: %d\nAverage Average time / frame %lf [ms].\n Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
+
             }
             *merged += *pointcloud_surf_in;
             *merged += *pointcloud_edge_in;
@@ -303,7 +313,11 @@ int main(int argc, char **argv)
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
     std::thread odom_estimation_process{odom_estimation};
 
-    ros::spin();
+    ros::Rate r(100); // 10 hz
+    while (keep_running){
+      ros::spinOnce();
+      r.sleep();
+    }
 
     std::cout << "output directory: " << directory << std::endl;
     std::cout << "Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
@@ -320,6 +334,7 @@ int main(int argc, char **argv)
       //cout << "Save Posegraph" << endl;
       SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
     }
+    std::cout << "Program finished nicely" << std::endl << std::endl;
 
     return 0;
 }

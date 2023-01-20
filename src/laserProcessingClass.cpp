@@ -10,7 +10,10 @@ void LaserProcessingClass::init(lidar::Lidar lidar_param_in){
 }
 void LaserProcessingClass::RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans){
   for (int i = 0; i < (int) pc_in->points.size(); i++){
-    int scanID = pc_in->points[i].ring;
+    const int scanID = pc_in->points[i].ring;
+    double distance = sqrt(pc_in->points[i].x * pc_in->points[i].x + pc_in->points[i].y * pc_in->points[i].y);
+    if(distance<lidar_param.min_distance || distance>lidar_param.max_distance)
+      continue;
     //std::cout << scanID << ", ";
     vel_point::PointXYZIRT p_tmp;
     p_tmp.x = pc_in->points[i].x; p_tmp.y = pc_in->points[i].y; p_tmp.z = pc_in->points[i].z; p_tmp.intensity = pc_in->points[i].intensity; p_tmp.ring = pc_in->points[i].ring;  p_tmp.time = pc_in->points[i].time;

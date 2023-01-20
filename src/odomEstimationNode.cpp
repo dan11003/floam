@@ -75,6 +75,8 @@ void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, 
       *merged_transformed += tmp_transformed;
   }
   cout << "Downsample point cloud resolution " << downsample_size << endl;
+
+
   pcl::VoxelGrid<pcl::PointXYZI> sor;
   sor.setInputCloud (merged_transformed);
   sor.setLeafSize (downsample_size, downsample_size, downsample_size);

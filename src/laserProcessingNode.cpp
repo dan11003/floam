@@ -121,8 +121,8 @@ void laser_processing(){
       pointcloud_in = imu_aligned;
 
 
-      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge(new pcl::PointCloud<vel_point::PointXYZIRT>());
-      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_surf(new pcl::PointCloud<vel_point::PointXYZIRT>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_surf(new pcl::PointCloud<vel_point::PointXYZIRTC>());
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -135,7 +135,7 @@ void laser_processing(){
       //ROS_INFO("average laser processing time %f ms \n \n", total_time/total_frame);
 
       sensor_msgs::PointCloud2 laserCloudFilteredMsg;
-      pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_filtered(new pcl::PointCloud<vel_point::PointXYZIRT>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_filtered(new pcl::PointCloud<vel_point::PointXYZIRTC>());
       *pointcloud_filtered+=*pointcloud_edge;
       *pointcloud_filtered+=*pointcloud_surf;
       /*pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);

@@ -79,7 +79,8 @@ bool ImuHandler::TimeContained(const double t)const{
   else
     return false;
 }
-void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr input, const Eigen::Vector3d& velocity){
+
+void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr input, const Eigen::Vector3d& velocity){
 
   for(auto && pnt : input->points){
     const double tPoint = pnt.time;
@@ -90,6 +91,7 @@ void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr input, cons
   }
 
 }
+
 bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics){
 
   compensated.resize(input.size());

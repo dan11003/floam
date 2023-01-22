@@ -24,8 +24,12 @@ Eigen::Vector3d Imu2AngularVelocity(const sensor_msgs::Imu& data);
 
 Eigen::Vector3d Imu2LinearAcceleration(const sensor_msgs::Imu& data);
 
+void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr input, const Eigen::Vector3d& velocity);
 
 
+
+
+// Imu Handler
 typedef std::pair<double, sensor_msgs::Imu> stampedImu;
 
 bool compare (const stampedImu i, const stampedImu& j);

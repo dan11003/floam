@@ -39,8 +39,8 @@ class LaserProcessingClass
 public:
     LaserProcessingClass();
     void init(lidar::Lidar lidar_param_in);
-    void featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_surf);
-    void featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_surf);
+    void featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf);
+    void featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf);
     void RingExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans);
     void RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans);
 

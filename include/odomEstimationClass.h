@@ -38,7 +38,38 @@
 #include "utils.h"
 using std::cout;
 using std::endl;
-pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr VelCloud);
+pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);
+
+
+class SurfelExtraction
+{
+public:
+  SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par);
+
+  void Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals);
+
+private:
+
+  bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
+
+  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& output);
+
+  void Initialize();
+
+  lidar::Lidar lidar_par_;
+  VelCurve::Ptr surf_in_;
+
+  pcl::PointXYZINormal defaultNormal;
+
+};
+
+
+
+
+
+
+
+
 
 class OdomEstimationClass 
 {
@@ -52,7 +83,7 @@ class OdomEstimationClass
 
     void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in);
 
-    void UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew);
+    void UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& surf_in, bool deskew);
 
     /*!
          * \brief updatePointsToMap
@@ -62,7 +93,7 @@ class OdomEstimationClass
          */
     void updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
 
-    void updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
+    void updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
 
     void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
 

@@ -11,6 +11,9 @@
 #include "pcl_ros/point_cloud.h"
 #include"pcl_ros/publisher.h"
 
+using std::endl;
+using std::cout;
+
 namespace vel_point{
 struct PointXYZIRT
 {
@@ -31,6 +34,38 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRT,
                                   (std::uint16_t, ring, ring)
                                   (float, time, time))
 
+namespace vel_point{
+struct PointXYZIRTC
+{
+  PCL_ADD_POINT4D;                    // quad-word XYZ
+  float         intensity;            ///< laser intensity reading
+  std::uint16_t ring;                 ///< laser ring number
+  float         time;                 ///< laser time reading
+  float         curvature;            ///< laser gemetry curvature
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
+}
+EIGEN_ALIGN16;
+}  // namespace velodyne_pcl
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, intensity, intensity)
+                                  (std::uint16_t, ring, ring)
+                                  (float, time, time)
+                                  (float, curvature, curvature))
+
+typedef pcl::PointCloud<vel_point::PointXYZIRTC> VelCurve;
+
+void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
+
+inline vel_point::PointXYZIRTC ToCurvature(const vel_point::PointXYZIRT& pnt, const double curvature){
+  vel_point::PointXYZIRTC tmp;
+  tmp.x = pnt.x; tmp.y = pnt.y; tmp.z = pnt.z;
+  tmp.ring = pnt.ring; tmp.time = pnt.time; tmp.intensity = pnt.intensity; tmp.curvature = curvature;
+  return tmp;
+}
 Eigen::Quaterniond euler2Quaternion(const double roll, const double pitch, const double yaw);
 
 template<class T>

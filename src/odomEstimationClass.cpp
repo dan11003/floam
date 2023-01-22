@@ -4,6 +4,98 @@
 
 #include "odomEstimationClass.h"
 
+
+
+SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
+  surf_in_ = surf_in;
+  Initialize();
+}
+
+void SurfelExtraction::Initialize(){
+
+
+  std::vector<VelCurve::Ptr> clouds(lidar_par_.num_lines);
+  for(auto && cloud : clouds){ // initiaize
+    cloud = VelCurve::Ptr(new VelCurve());
+  }
+
+  for(auto&& pnt : surf_in_->points){
+    clouds[pnt.ring]->push_back(pnt);
+  }
+
+  for(auto && cloud : clouds){
+    SortTime(cloud);
+  }
+}
+void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals){
+  normals =  pcl::PointCloud<pcl::PointXYZINormal>::Ptr(new pcl::PointCloud<pcl::PointXYZINormal>());
+  pcl::PointXYZINormal p0;
+
+  /*for(auto && pnt : surf_in_->points){ // only for test
+    //p0.x = 0.1*i; p0.y = 0.1*i; p0.z = 0.1*i; p0.curvature = 2; p0.intensity = 50; p0.normal_x = 0.1; p0.normal_y = 0.1; p0.normal_z = 0.9;
+    //p0.x = pnt.x; p0.y = pnt.y; p0.z = pnt.z; p0.normal_x = 1; p0.normal_y = 1; p0.normal_z = 1;
+    //normals->push_back(p0);
+  }*/
+  pcl::PointXYZINormal pNormalEst;
+  for(auto && pnt : surf_in_->points){
+    if(EstimateNormal(pnt, pNormalEst)){
+      normals->push_back(pNormalEst);
+    }
+  }
+
+}
+bool SurfelExtraction::GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours){
+  const int ring = pnt.ring;
+  const double time = pnt.time;
+  std::vector<int> search;
+  // not last ring
+  if(ring < lidar_par_.num_lines - 1){
+  }
+  // not first ring
+  if(ring > 0 ){
+
+  }
+
+
+  return true;
+
+
+}
+bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt,pcl::PointXYZINormal& pNormalEst){
+
+  Eigen::MatrixXd X ; //neighbours
+  const bool statusOK = GetNeighbours(pnt, X); // 3 x Nsamples
+  if(!statusOK){
+    return false;
+  }
+  const int Nsamples = X.rows();
+  Eigen::Vector3d mean(0,0,0);  // 3 x 1
+
+  for(Eigen::Index i=0 ; i<Nsamples ; i++)
+    mean.block<3,1>(0,0) += X.block<1,3>(i,0).transpose(); // compute sum
+
+  for(Eigen::Index i=0 ; i<Nsamples ; i++) // subtract mean
+    X.block<1,3>(i,0) = X.block<1,3>(i,0) - mean.block<3,1>(0,0).transpose();
+
+  const Eigen::Matrix3d cov = X.transpose()*X;
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(cov);
+
+  const double l1 = es.eigenvalues()[0];  // l1 < l2 < l3
+  const double l2 = es.eigenvalues()[1];
+  const double l3 = es.eigenvalues()[2];
+  const double planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 & l2 -> 0  planarity -> 1 if l3 >> l1+l2
+  const Eigen::Vector3d normal = planarity*es.eigenvectors().col(0);
+  pNormalEst.normal_x = normal(0); pNormalEst.normal_y = normal(1); pNormalEst.normal_z = normal(2); // assign normals
+  pNormalEst.x = pnt.x; pNormalEst.y = pnt.y; pNormalEst.z = pnt.z; pNormalEst.intensity = pnt.intensity; //copy other fields
+  return true;
+}
+
+
+
+
+
+
+
 void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function){
   //init local map
   laserCloudCornerMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
@@ -31,25 +123,25 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
   optimization_count=12;
 }
 
-void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
-    ros::Time t0 = ros::Time::now();
-    if(!deskew){
-        updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
-        ros::Time t1 = ros::Time::now();
-    }else{
-        updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
-        Eigen::Vector3d velocity = GetVelocity();
-        dmapping::CompensateVelocity(edge_in, velocity);
-        dmapping::CompensateVelocity(surf_in, velocity);
+void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& surf_in, bool deskew){
+  ros::Time t0 = ros::Time::now();
+  if(!deskew){
+    updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
+    ros::Time t1 = ros::Time::now();
+  }else{
+    updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
+    Eigen::Vector3d velocity = GetVelocity();
+    dmapping::CompensateVelocity(edge_in, velocity);
+    dmapping::CompensateVelocity(surf_in, velocity);
 
-        ros::Time t1 = ros::Time::now();
-        updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
-        ros::Time t2 = ros::Time::now();
-        //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
-    }
+    ros::Time t1 = ros::Time::now();
+    updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
+    ros::Time t2 = ros::Time::now();
+    //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
+  }
 }
 
-void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type){
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& surf_in, const UpdateType update_type){
   pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
   pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in_XYZI = VelToIntensityCopy(surf_in);
   updatePointsToMap(edge_in_XYZI, surf_in_XYZI, update_type);
@@ -82,7 +174,7 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
 
       ceres::LossFunction *loss_function = nullptr;
       if(loss_function_ == "huber"){
-      //  std::cout << "huber" << std::endl;
+        //  std::cout << "huber" << std::endl;
         loss_function = new ceres::HuberLoss(0.1);
       }
       else{
@@ -299,14 +391,14 @@ OdomEstimationClass::OdomEstimationClass(){
 
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr VelCloud){
+pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud){
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr converted(new pcl::PointCloud<pcl::PointXYZI>());
-    converted->resize(VelCloud->size());
-    converted->header = VelCloud->header;
-    for(int i = 0; i < converted->size() ; i++)
-    {
-        converted->points[i].x = VelCloud->points[i].x; converted->points[i].y = VelCloud->points[i].y; converted->points[i].z = VelCloud->points[i].z; converted->points[i].intensity = VelCloud->points[i].intensity;
-    }
-    return converted;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr converted(new pcl::PointCloud<pcl::PointXYZI>());
+  converted->resize(VelCloud->size());
+  converted->header = VelCloud->header;
+  for(int i = 0; i < converted->size() ; i++)
+  {
+    converted->points[i].x = VelCloud->points[i].x; converted->points[i].y = VelCloud->points[i].y; converted->points[i].z = VelCloud->points[i].z; converted->points[i].intensity = VelCloud->points[i].intensity;
+  }
+  return converted;
 }

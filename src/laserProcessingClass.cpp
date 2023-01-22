@@ -69,7 +69,7 @@ void LaserProcessingClass::RingExtraction(const pcl::PointCloud<vel_point::Point
   }
 }
 
-void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_surf){
+void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf){
 
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*pc_in, indices);
@@ -118,7 +118,7 @@ void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::Po
 }
 
 
-void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_out_surf){
+void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf){
 
   std::sort(cloudCurvature.begin(), cloudCurvature.end(), [](const Double2d & a, const Double2d & b)
   {
@@ -131,7 +131,8 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
   int point_info_count =0;
   for (int i = cloudCurvature.size()-1; i >= 0; i--)
   {
-    int ind = cloudCurvature[i].id;
+    const int ind = cloudCurvature[i].id;
+    const int curv = cloudCurvature[i].value;
     if(std::find(picked_points.begin(), picked_points.end(), ind)==picked_points.end()){
       if(cloudCurvature[i].value <= 0.1){
         break;
@@ -141,7 +142,8 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
       picked_points.push_back(ind);
 
       if (largestPickedNum <= 20){
-        pc_out_edge->push_back(pc_in->points[ind]);
+        pc_out_edge->push_back(ToCurvature(pc_in->points[ind], curv));
+        //pc_out_edge->push_back(pc_in->points[ind]);
         point_info_count++;
       }else{
         break;
@@ -191,7 +193,7 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
   //             pc_surf_lessFlat->push_back(pc_in->points[ind]);
   //             point_info_count++;
   //         }
-  //         else{
+  //         else{cloudCurvature
   //             break;
   //         }
 
@@ -219,10 +221,11 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
 
   for (int i = 0; i <= (int)cloudCurvature.size()-1; i++)
   {
-    int ind = cloudCurvature[i].id;
+    const int ind = cloudCurvature[i].id;
+    const float curv = cloudCurvature[i].value;
     if( std::find(picked_points.begin(), picked_points.end(), ind)==picked_points.end())
     {
-      pc_out_surf->push_back(pc_in->points[ind]);
+      pc_out_surf->push_back(ToCurvature(pc_in->points[ind], curv));
     }
   }
 
@@ -235,7 +238,7 @@ LaserProcessingClass::LaserProcessingClass(){
 
 Double2d::Double2d(int id_in, double value_in){
   id = id_in;
-  value =value_in;
+  value = value_in;
 };
 
 PointsInfo::PointsInfo(int layer_in, double time_in){

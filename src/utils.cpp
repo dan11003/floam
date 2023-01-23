@@ -105,3 +105,83 @@ void SaveOdom(
   }
 }
 
+
+
+std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, int k, float max, float query) {
+
+  auto itr_begin = arr.begin();
+  auto itr_end = arr.end();
+
+  std::vector<int> indicies;
+  auto it = std::lower_bound(itr_begin, itr_end, query);
+
+  if(it == itr_begin){
+    for(auto itr = itr_begin ; itr != itr_begin+k ; itr++){
+      indicies.push_back(std::distance(itr_begin,itr));
+    }
+    return indicies; // return vector<int>(itr_begin(), itr_begin()+k);
+  }else if(it == itr_end){
+    for(auto itr = itr_end - k ; itr != itr_end ; itr++){
+      indicies.push_back(std::distance(itr_begin,itr));
+    }
+    return indicies; //return vector<int>(itr_end() - k, itr_end());
+
+  }
+
+  const int n = arr.size();
+  int idx = it - itr_begin;
+  int left, right;
+  left = idx - k/2;
+  right = left + k;
+
+  // cout << left << ", " << right << " -> ";
+
+  if(left < 0){
+    left = 0;
+    right = left +k;
+  }
+
+  if(right > n){
+    right = n;
+    left = right - k;
+  }
+
+  // cout << left << ", " << right << " -> ";
+
+  /*
+    since arr[idx] is just a surrogate of x,
+    we need to examine the diff of elements with "x" again
+    */
+
+  /*
+    while the diff of the element to the leftmost element "<=" that of the rightmost element,
+    move the subarray left
+
+    here the "<=" means we prefer smaller element
+    */
+  while(left > 0 && query - arr[left-1] <= arr[right-1] - query){
+    right--;
+    left--;
+  }
+
+  /*
+    while the diff of rightmost element "<" that of the element to the leftmost element,
+    move the subarray right
+    */
+  while(right < n && arr[(right-1)+1] - query  < query - arr[left]){
+    right++;
+    left++;
+  }
+
+  // cout << left << ", " << right << endl;
+  //std::vector<int> indicies(itr_begin()+left , itr_begin()+right);
+  //std::cout << "query: " << query << std::endl;
+  for(auto itr = itr_begin + left  ; itr != itr_begin + right ; itr++){
+    //cout << std::fabs(query - *itr) << ", ";
+    indicies.push_back(std::distance(itr_begin,itr));
+  }
+  //std::cout << std::endl << std::endl;
+  return indicies;
+}
+
+

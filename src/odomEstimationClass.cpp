@@ -5,7 +5,6 @@
 #include "odomEstimationClass.h"
 
 
-
 SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
   surf_in_ = surf_in;
   Initialize();
@@ -13,24 +12,26 @@ SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_p
 
 void SurfelExtraction::Initialize(){
 
-
-  std::vector<VelCurve::Ptr> clouds(lidar_par_.num_lines);
-  for(auto && cloud : clouds){ // initiaize
-    cloud = VelCurve::Ptr(new VelCurve());
+  ringClouds_.resize(lidar_par_.num_lines);
+  times_.resize(lidar_par_.num_lines);
+  for(int i = 0 ; i < ringClouds_.size() ; i++){ // initiaize clouds
+    ringClouds_[i] = VelCurve::Ptr(new VelCurve());
   }
-
-  for(auto&& pnt : surf_in_->points){
-    clouds[pnt.ring]->push_back(pnt);
+  for(auto&& pnt : surf_in_->points){ // Fill up
+    ringClouds_[pnt.ring]->push_back(pnt);
   }
-
-  for(auto && cloud : clouds){
+  for(auto && cloud : ringClouds_){ // Sort
     SortTime(cloud);
   }
+  for(auto&& cloud : ringClouds_){ // And create the same structure for doubles
+    for(auto && pnt : cloud->points){
+      times_[pnt.ring].push_back(pnt.time); // Please preallocate next time daniel!!!!
+    }
+  }
+
 }
 void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals){
   normals =  pcl::PointCloud<pcl::PointXYZINormal>::Ptr(new pcl::PointCloud<pcl::PointXYZINormal>());
-  pcl::PointXYZINormal p0;
-
   /*for(auto && pnt : surf_in_->points){ // only for test
     //p0.x = 0.1*i; p0.y = 0.1*i; p0.z = 0.1*i; p0.curvature = 2; p0.intensity = 50; p0.normal_x = 0.1; p0.normal_y = 0.1; p0.normal_z = 0.9;
     //p0.x = pnt.x; p0.y = pnt.y; p0.z = pnt.z; p0.normal_x = 1; p0.normal_y = 1; p0.normal_z = 1;
@@ -44,30 +45,81 @@ void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& norma
   }
 
 }
+void SurfelExtraction::LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours){
+
+  NNSearchArray NNSearch;
+  const int scans_par_line = 1800;
+  float hor_time_res = 6*lidar_par_.scan_period/scans_par_line; // max 6 points from center
+  //cout << "max tdiff - not implemented yet: " << scans_par_line << std::endl;
+  std::vector<int> indicies = NNSearch.findClosestElements(times_[ring], 5, hor_time_res, query);
+  //cout << "nearby: " << indicies.size() << endl;
+  if(indicies.size() > 0){
+    //const int first_row = neighbours.rows();
+    //cout << "first:" << first_row << endl;
+    //neighbours.resize(first_row + indicies.size(), 3);
+    //cout << "resized:" << endl;
+    //neighbours = Eigen::MatrixXd(indicies.size(),3);
+    for(int first_row = row; row< first_row + indicies.size() ; row++){ // i is row in matrix
+      //cout << i - first_row << endl;
+      const int idx = indicies[row - first_row]; // zero index
+      //cout << "idx" << idx << endl;
+      const Eigen::Vector3d  pntNear(ringClouds_[ring]->points[idx].x, ringClouds_[ring]->points[idx].y, ringClouds_[ring]->points[idx].z);
+      neighbours.block<1,3>(row,0) = pntNear;
+      //cout << "neigbour " << neighbours.block<1,3>(i,0).transpose() << endl;
+    }
+  }
+}
 bool SurfelExtraction::GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours){
   const int ring = pnt.ring;
   const double time = pnt.time;
   std::vector<int> search;
   // not last ring
+  neighbours = Eigen::MatrixXd(15,3);
+  int first = 0;
+
+  ///cout << "ring: "<< ring << endl;
+  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
+  LineNNSearch(ring, time,first, neighbours);
+  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
   if(ring < lidar_par_.num_lines - 1){
+    LineNNSearch(ring+1, time, first, neighbours);
   }
+  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
   // not first ring
   if(ring > 0 ){
-
+    LineNNSearch(ring-1, time, first, neighbours);
   }
-
+  neighbours.conservativeResize(first,3);
+  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
 
   return true;
 
 
 }
-bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt,pcl::PointXYZINormal& pNormalEst){
+bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& pNormalEst){
 
-  Eigen::MatrixXd X ; //neighbours
+  //cout << "EstimateNormal" << endl;
+  Eigen::MatrixXd X; //neighbours
   const bool statusOK = GetNeighbours(pnt, X); // 3 x Nsamples
   if(!statusOK){
     return false;
+  }pcl::PointCloud<pcl::PointXYZ> cloud, cloud_pnt;
+
+  for(int i = 0 ; i <X.rows() ; i++){
+    pcl::PointXYZ p(X(i,0), X(i,1), X(i,2));
+    cloud.push_back(p);
   }
+  cout << X << endl;
+  cout <<"rows: " <<  X.rows() << endl;
+  pcl::PointXYZ pnt_xyz(pnt.x, pnt.y, pnt.z);
+  cloud_pnt.push_back(pnt_xyz);
+  PublishCloud("surf", *surf_in_, "base_link", ros::Time::now() );
+  PublishCloud("center", cloud_pnt, "base_link", ros::Time::now() );
+  PublishCloud("neighbours", cloud, "base_link", ros::Time::now() );
+  if(X.rows() == 15){
+   char c = getchar();
+  }
+  //PublishCloud(const std::string& topic, Cloud& cloud, const std::string& frame_id, const ros::Time& t);
   const int Nsamples = X.rows();
   Eigen::Vector3d mean(0,0,0);  // 3 x 1
 
@@ -123,18 +175,25 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
   optimization_count=12;
 }
 
+
 void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& surf_in, bool deskew){
+
   ros::Time t0 = ros::Time::now();
   if(!deskew){
     updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
     ros::Time t1 = ros::Time::now();
   }else{
+
+    //cout << "initial" << endl;
+
     updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
     Eigen::Vector3d velocity = GetVelocity();
     dmapping::CompensateVelocity(edge_in, velocity);
     dmapping::CompensateVelocity(surf_in, velocity);
 
     ros::Time t1 = ros::Time::now();
+
+    cout << "final" << endl;
     updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
     ros::Time t2 = ros::Time::now();
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
@@ -206,8 +265,12 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
   odom = Eigen::Isometry3d::Identity();
   odom.linear() = q_w_curr.toRotationMatrix();
   odom.translation() = t_w_curr;
-  if( update_type == UpdateType::VANILLA || UpdateType::REFINEMENT_AND_UPDATE){
-    addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+  if( update_type == UpdateType::VANILLA || update_type == UpdateType::REFINEMENT_AND_UPDATE){
+    const bool UpdateMap = KeyFrameUpdate(downsampledSurfCloud, downsampledEdgeCloud, odom);
+    cout << "update?" << std::boolalpha << UpdateMap << endl;
+    if(UpdateMap){
+      addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+    }
   }
 
 }
@@ -341,6 +404,7 @@ void OdomEstimationClass::addSurfCostFactor(const pcl::PointCloud<pcl::PointXYZI
 
 void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledEdgeCloud, const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledSurfCloud){
 
+
   for (int i = 0; i < (int)downsampledEdgeCloud->points.size(); i++)
   {
     pcl::PointXYZI point_temp;
@@ -389,6 +453,8 @@ void OdomEstimationClass::getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserClou
 
 OdomEstimationClass::OdomEstimationClass(){
 
+
+
 }
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud){
@@ -402,3 +468,29 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<ve
   }
   return converted;
 }
+
+bool OdomEstimationClass::KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud, const Eigen::Isometry3d& pose){ // determines if the current pose is a new keyframe
+
+  const keyframe currentFrame{pose, edge_cloud, surf_cloud};
+  static bool first = true;
+  if(first){
+    first = false;
+    keyframes_.push_back(std::move(currentFrame));
+    return true;
+  }else{
+    const Eigen::Isometry3d delta = keyframes_.back().pose.inverse() * currentFrame.pose;
+    const double delta_movement = delta.translation().norm();
+    const double delta_rot = Eigen::AngleAxisd(delta.linear()).angle();
+
+    if(delta_movement > keyframe_min_transl_ || delta_rot > keyframe_min_rot_) {
+      keyframes_.push_back(currentFrame);
+      if(keyframes_.size() > keyframe_history_){
+        keyframes_.erase(keyframes_.begin());
+      }
+      return true;
+    }else{
+      return false;
+    }
+  }
+}
+

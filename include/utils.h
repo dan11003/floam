@@ -14,6 +14,7 @@
 #include <pcl/common/transforms.h>
 
 #include <boost/filesystem.hpp>
+#include "lidar.h"
 using boost::format;
 using boost::io::group;
 
@@ -39,6 +40,15 @@ void SaveOdom(
     const std::vector<Eigen::Affine3d>& poses,
     const std::vector<double>& keyframe_stamps,
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds);
+
+
+
+//Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.
+//Memory Usage: 31 MB, less than 16.67% of C++ online submissions for Find K Closest Elements.
+class NNSearchArray {
+public:
+    std::vector<int> findClosestElements(std::vector<double>& arr, int k, float max, float query);
+};
 
 
 

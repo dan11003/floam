@@ -9,7 +9,7 @@
 #include "pcl/point_types.h"
 #include "eigen3/Eigen/Dense"
 #include "pcl_ros/point_cloud.h"
-#include"pcl_ros/publisher.h"
+#include "pcl_ros/publisher.h"
 
 using std::endl;
 using std::cout;
@@ -59,6 +59,14 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
 typedef pcl::PointCloud<vel_point::PointXYZIRTC> VelCurve;
 
 void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
+
+struct lessThanKey
+{
+  inline bool operator() (const vel_point::PointXYZIRTC& p1, const vel_point::PointXYZIRTC& p2)const
+  {
+    return (p1.time < p2.time);
+  }
+};
 
 inline vel_point::PointXYZIRTC ToCurvature(const vel_point::PointXYZIRT& pnt, const double curvature){
   vel_point::PointXYZIRTC tmp;

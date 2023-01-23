@@ -166,14 +166,18 @@ void odom_estimation(){
       *merged_raw += *pointcloud_surf_in;
 
       SurfelExtraction surfEl(pointcloud_surf_in, lidar_param);
+
       pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals;
+      std::cout << "surf extract" << std::endl;
+      surfEl.Extract(surfInNormals);
+      std::cout << "surf extract finished" << std::endl;
       /*std::uint16_t max_r = 0, min_r = 20;
       for(auto && pnt : pointcloud_surf_in->points){
         max_r = std::max(max_r,pnt.ring);
         min_r = std::min(min_r,pnt.ring);
       }
       std::cout << "max_r: " << max_r << ", min_r: " << min_r << std::endl;*/
-      surfEl.Extract(surfInNormals);
+
       PublishCloud("normals",*surfInNormals,"sensor", ros::Time::now());
       pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);
 

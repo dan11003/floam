@@ -19,6 +19,7 @@
     <param name="directory_output" value="/home/$(env USER)/Downloads/export/" />
     <!--- Sim Time -->
     <param name="scan_period" value="0.1" />
+    <param name="scan_period" value="0.1" />
 
     <param name="vertical_angle" type="double" value="2.0" />
     <param name="map_resolution" type="double" value="0.1" />

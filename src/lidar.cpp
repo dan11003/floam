@@ -4,14 +4,9 @@
 
 #include "lidar.h"
 
+
 void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud){
-  struct lessThanKey
-  {
-    inline bool operator() (const vel_point::PointXYZIRTC& p1, const vel_point::PointXYZIRTC& p2)
-    {
-      return (p1.time < p2.time);
-    }
-  };
+
   std::sort(cloud->begin(),cloud->end(), lessThanKey());
 
 }

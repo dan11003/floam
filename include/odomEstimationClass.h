@@ -40,6 +40,15 @@ using std::cout;
 using std::endl;
 pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr VelCloud);
 
+typedef struct
+{
+  Eigen::Isometry3d pose; // odometry frame
+  pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud; // sensor frame
+  pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud; // sensor frame
+}keyframe;
+
+typedef std::vector<keyframe> keyframes;
+
 class OdomEstimationClass 
 {
     public:
@@ -67,6 +76,8 @@ class OdomEstimationClass
     void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
 
     Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
+
+    bool KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud, const Eigen::Isometry3d& pose); // determines if the current pose is a new keyframe
 
 
 
@@ -99,6 +110,12 @@ private:
     std::string loss_function_;
 
     lidar::Lidar lidar_param_;
+
+    const double keyframe_min_transl_ = 0.07; // 0.1 m
+    const double keyframe_min_rot_ = 2*M_PI/180.0;    //or 5 deg
+    size_t keyframe_history_ = 3;
+    keyframes keyframes_;
+
 
     //function
     void addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function);

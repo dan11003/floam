@@ -30,7 +30,7 @@ void SurfelExtraction::Initialize(){
   }
 
 }
-void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals){
+void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals, std::vector<SurfelPointInfo>& surfels){
   normals =  pcl::PointCloud<pcl::PointXYZINormal>::Ptr(new pcl::PointCloud<pcl::PointXYZINormal>());
   /*for(auto && pnt : surf_in_->points){ // only for test
     //p0.x = 0.1*i; p0.y = 0.1*i; p0.z = 0.1*i; p0.curvature = 2; p0.intensity = 50; p0.normal_x = 0.1; p0.normal_y = 0.1; p0.normal_z = 0.9;
@@ -40,6 +40,8 @@ void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& norma
 
   pcl::PointXYZ pOrigin(0,0,0);
   pcl::PointXYZINormal pNormalEst;
+  SurfelPointInfo surfels;
+
   for(auto && pnt : surf_in_->points){
     if(EstimateNormal(pnt, pNormalEst)){
       pcl::flipNormalTowardsViewpoint(pNormalEst, 0, 0, 0, pNormalEst.normal_x, pNormalEst.normal_y, pNormalEst.normal_z);
@@ -99,7 +101,7 @@ bool SurfelExtraction::GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::
 
 
 }
-bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& pNormalEst){
+bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& pNormalEst, SurfelPointInfo& surfel){
 
   //cout << "EstimateNormal" << endl;
   Eigen::MatrixXd X; //neighbours
@@ -140,12 +142,13 @@ bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::P
   const double l1 = std::sqrt(es.eigenvalues()[0]);  // l1 < l2 < l3
   const double l2 = std::sqrt(es.eigenvalues()[1]);
   const double l3 = std::sqrt(es.eigenvalues()[2]);
-  const double planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
+  surfel.planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
+  surfel.lmax = l3;
   //cout << planarity << ", ";
 
   const Eigen::Vector3d normal = planarity*es.eigenvectors().col(0);
   pNormalEst.normal_x = normal(0); pNormalEst.normal_y = normal(1); pNormalEst.normal_z = normal(2); // assign normals
-  pNormalEst.x = pnt.x; pNormalEst.y = pnt.y; pNormalEst.z = pnt.z; pNormalEst.intensity = pnt.intensity; //copy other fields
+  pNormalEst.x = pnt.x; pNormalEst.y = pnt.y; pNormalEst.z = pnt.z; pNormalEst.intensity = surfel.planarity; //copy other fields
   //pNormalEst.x = mean(0); pNormalEst.y = mean(1); pNormalEst.z = mean(2); pNormalEst.intensity = pnt.intensity; //copy other fieldsreturn true;
 
   /*if(X.rows() == 15){

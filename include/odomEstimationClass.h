@@ -44,10 +44,19 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<ve
 
 class SurfelExtraction
 {
+    typedef struct
+    {
+        double l3; // largest eigen value;
+        double planarity;
+        int nSamples;
+        Eigen::Matrix3d cov;
+        Eigen::Vector3d normal;
+
+    }SurfelPointInfo;
 public:
   SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par);
 
-  void Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals);
+  void Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals, std::vector<SurfelPointInfo>& surfels);
 
 private:
 
@@ -55,7 +64,7 @@ private:
 
   bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
 
-  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& output);
+  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& output, std::vecot);
 
   void Initialize();
 

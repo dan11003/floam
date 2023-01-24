@@ -4,7 +4,17 @@
 
 #include "odomEstimationClass.h"
 
+NormalCloud::Ptr SurfElCloud::GetPointCloud(){
+  NormalCloud::Ptr output(new NormalCloud());
+  for(auto && surfEl : cloud){
+    pcl::PointXYZINormal pnt;
+    pnt.x = surfEl.mean(0); pnt.y = surfEl.mean(1); pnt.z = surfEl.mean(2);
+    pnt.normal_x = surfEl.normal(0); pnt.normal_y = surfEl.normal(1);  pnt.normal_z = surfEl.normal(2);
+    pnt.intensity = surfEl.l3;
+    output->push_back(std::move(pnt));
+  }
 
+}
 SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
   surf_in_ = surf_in;
   Initialize();
@@ -30,24 +40,22 @@ void SurfelExtraction::Initialize(){
   }
 
 }
-void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals, std::vector<SurfelPointInfo>& surfels){
-  normals =  pcl::PointCloud<pcl::PointXYZINormal>::Ptr(new pcl::PointCloud<pcl::PointXYZINormal>());
+void SurfelExtraction::Extract(SurfElCloud& surfelCloud){
+
   /*for(auto && pnt : surf_in_->points){ // only for test
     //p0.x = 0.1*i; p0.y = 0.1*i; p0.z = 0.1*i; p0.curvature = 2; p0.intensity = 50; p0.normal_x = 0.1; p0.normal_y = 0.1; p0.normal_z = 0.9;
     //p0.x = pnt.x; p0.y = pnt.y; p0.z = pnt.z; p0.normal_x = 1; p0.normal_y = 1; p0.normal_z = 1;
     //normals->push_back(p0);
   }*/
 
-  pcl::PointXYZ pOrigin(0,0,0);
-  pcl::PointXYZINormal pNormalEst;
-  SurfelPointInfo surfels;
 
-  for(auto && pnt : surf_in_->points){
-    if(EstimateNormal(pnt, pNormalEst)){
-      pcl::flipNormalTowardsViewpoint(pNormalEst, 0, 0, 0, pNormalEst.normal_x, pNormalEst.normal_y, pNormalEst.normal_z);
-      normals->push_back(pNormalEst);
+ for(auto && pnt : surf_in_->points){
+    SurfelPointInfo pntSurfEl;
+    if(EstimateNormal(pnt, pntSurfEl)){
+      surfelCloud.cloud.push_back(std::move(pntSurfEl));
     }
   }
+ NormalCloud::Ptr normals = surfelCloud.GetPointCloud();
 
 }
 void SurfelExtraction::LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours){
@@ -101,7 +109,7 @@ bool SurfelExtraction::GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::
 
 
 }
-bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& pNormalEst, SurfelPointInfo& surfel){
+bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfel){
 
   //cout << "EstimateNormal" << endl;
   Eigen::MatrixXd X; //neighbours
@@ -142,26 +150,22 @@ bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::P
   const double l1 = std::sqrt(es.eigenvalues()[0]);  // l1 < l2 < l3
   const double l2 = std::sqrt(es.eigenvalues()[1]);
   const double l3 = std::sqrt(es.eigenvalues()[2]);
+  const double planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
+
+  Eigen::Vector3d normal = es.eigenvectors().col(0);
+
+  Eigen::Matrix <double, 3, 1> vp (-pnt.x, -pnt.y, -pnt.z);
+  if(vp.dot(normal)> 0)
+    normal *=-1;
+
+  surfel.centerPoint = Eigen::Vector3d(pnt.x, pnt.y, pnt.z);
+  surfel.mean = mean;
+  surfel.l3 = l3;
+  surfel.cov = cov;
+  surfel.nSamples = Nsamples;
   surfel.planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
-  surfel.lmax = l3;
-  //cout << planarity << ", ";
-
-  const Eigen::Vector3d normal = planarity*es.eigenvectors().col(0);
-  pNormalEst.normal_x = normal(0); pNormalEst.normal_y = normal(1); pNormalEst.normal_z = normal(2); // assign normals
-  pNormalEst.x = pnt.x; pNormalEst.y = pnt.y; pNormalEst.z = pnt.z; pNormalEst.intensity = surfel.planarity; //copy other fields
-  //pNormalEst.x = mean(0); pNormalEst.y = mean(1); pNormalEst.z = mean(2); pNormalEst.intensity = pnt.intensity; //copy other fieldsreturn true;
-
-  /*if(X.rows() == 15){
-    cout << "X: " << X<< endl;
-    cout << "Nsample: " << Nsamples<< endl;
-    cout << "mean: " << mean<< endl;
-    cout << "normal: " << normal << endl;
-    cout << "cov: " << cov << endl;
-    cout << "es.eigenvalues(): " << es.eigenvalues()<< endl;
-    cout << "es.eigenvectors(): " << es.eigenvectors()<< endl;
-    cout << "planarity: " << planarity<< endl;
-   char c = getchar();
-  }*/
+  surfel.normal = normal;
+  surfel.entropy = 0.5*log(1 + 2*M_PI*M_E*cov.determinant());
   return true;
 }
 
@@ -516,4 +520,5 @@ bool OdomEstimationClass::KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr su
     }
   }
 }
+
 

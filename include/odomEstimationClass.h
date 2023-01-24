@@ -37,26 +37,42 @@
 #include "string.h"
 #include "utils.h"
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/random_sample.h>
 using std::cout;
 using std::endl;
 pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);
 
+typedef struct
+{
+    double l3; // largest eigen value;
+    double planarity;
+    int nSamples;
+    Eigen::Matrix3d cov;
+    Eigen::Vector3d normal;
+    Eigen::Vector3d mean;
+    Eigen::Vector3d centerPoint;
+    double entropy;
+
+}SurfelPointInfo;
+
+class SurfElCloud
+{
+public:
+  SurfElCloud() {}
+
+  pcl::PointCloud<pcl::PointXYZINormal>::Ptr GetPointCloud();
+
+  std::vector<SurfelPointInfo> cloud;
+};
+
 
 class SurfelExtraction
 {
-    typedef struct
-    {
-        double l3; // largest eigen value;
-        double planarity;
-        int nSamples;
-        Eigen::Matrix3d cov;
-        Eigen::Vector3d normal;
 
-    }SurfelPointInfo;
 public:
   SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par);
 
-  void Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& normals, std::vector<SurfelPointInfo>& surfels);
+  void Extract(SurfElCloud& surfelCloud);
 
 private:
 
@@ -64,7 +80,7 @@ private:
 
   bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
 
-  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::PointXYZINormal& output, std::vecot);
+  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfEl);
 
   void Initialize();
 

@@ -58,6 +58,8 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
 
 typedef pcl::PointCloud<vel_point::PointXYZIRTC> VelCurve;
 
+typedef pcl::PointCloud<pcl::PointXYZINormal> NormalCloud;
+
 void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
 
 struct lessThanKey

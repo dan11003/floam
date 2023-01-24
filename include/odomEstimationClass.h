@@ -36,6 +36,7 @@
 #include <sstream>
 #include "string.h"
 #include "utils.h"
+#include <pcl/features/normal_3d.h>
 using std::cout;
 using std::endl;
 pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);

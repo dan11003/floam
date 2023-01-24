@@ -37,9 +37,12 @@ void SurfelExtraction::Extract(pcl::PointCloud<pcl::PointXYZINormal>::Ptr& norma
     //p0.x = pnt.x; p0.y = pnt.y; p0.z = pnt.z; p0.normal_x = 1; p0.normal_y = 1; p0.normal_z = 1;
     //normals->push_back(p0);
   }*/
+
+  pcl::PointXYZ pOrigin(0,0,0);
   pcl::PointXYZINormal pNormalEst;
   for(auto && pnt : surf_in_->points){
     if(EstimateNormal(pnt, pNormalEst)){
+      pcl::flipNormalTowardsViewpoint(pNormalEst, 0, 0, 0, pNormalEst.normal_x, pNormalEst.normal_y, pNormalEst.normal_z);
       normals->push_back(pNormalEst);
     }
   }
@@ -103,7 +106,8 @@ bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::P
   const bool statusOK = GetNeighbours(pnt, X); // 3 x Nsamples
   if(!statusOK){
     return false;
-  }pcl::PointCloud<pcl::PointXYZ> cloud, cloud_pnt;
+  }
+  /*pcl::PointCloud<pcl::PointXYZ> cloud, cloud_pnt;
 
   for(int i = 0 ; i <X.rows() ; i++){
     pcl::PointXYZ p(X(i,0), X(i,1), X(i,2));
@@ -116,29 +120,45 @@ bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, pcl::P
   PublishCloud("surf", *surf_in_, "base_link", ros::Time::now() );
   PublishCloud("center", cloud_pnt, "base_link", ros::Time::now() );
   PublishCloud("neighbours", cloud, "base_link", ros::Time::now() );
-  if(X.rows() == 15){
-   char c = getchar();
-  }
+  */
+
   //PublishCloud(const std::string& topic, Cloud& cloud, const std::string& frame_id, const ros::Time& t);
   const int Nsamples = X.rows();
-  Eigen::Vector3d mean(0,0,0);  // 3 x 1
+  Eigen::Matrix<double,1,3> mean(0,0,0);  // 3 x 1
 
   for(Eigen::Index i=0 ; i<Nsamples ; i++)
-    mean.block<3,1>(0,0) += X.block<1,3>(i,0).transpose(); // compute sum
+    mean += X.block<1,3>(i,0); // compute sum
+  mean/=Nsamples;
 
   for(Eigen::Index i=0 ; i<Nsamples ; i++) // subtract mean
-    X.block<1,3>(i,0) = X.block<1,3>(i,0) - mean.block<3,1>(0,0).transpose();
+    X.block<1,3>(i,0) = X.block<1,3>(i,0) - mean;
 
-  const Eigen::Matrix3d cov = X.transpose()*X;
+  const Eigen::Matrix3d cov = 1.0/(Nsamples - 1.0)*X.transpose()*X;
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(cov);
 
-  const double l1 = es.eigenvalues()[0];  // l1 < l2 < l3
-  const double l2 = es.eigenvalues()[1];
-  const double l3 = es.eigenvalues()[2];
-  const double planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 & l2 -> 0  planarity -> 1 if l3 >> l1+l2
+
+  const double l1 = std::sqrt(es.eigenvalues()[0]);  // l1 < l2 < l3
+  const double l2 = std::sqrt(es.eigenvalues()[1]);
+  const double l3 = std::sqrt(es.eigenvalues()[2]);
+  const double planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
+  //cout << planarity << ", ";
+
   const Eigen::Vector3d normal = planarity*es.eigenvectors().col(0);
   pNormalEst.normal_x = normal(0); pNormalEst.normal_y = normal(1); pNormalEst.normal_z = normal(2); // assign normals
   pNormalEst.x = pnt.x; pNormalEst.y = pnt.y; pNormalEst.z = pnt.z; pNormalEst.intensity = pnt.intensity; //copy other fields
+  //pNormalEst.x = mean(0); pNormalEst.y = mean(1); pNormalEst.z = mean(2); pNormalEst.intensity = pnt.intensity; //copy other fieldsreturn true;
+
+  /*if(X.rows() == 15){
+    cout << "X: " << X<< endl;
+    cout << "Nsample: " << Nsamples<< endl;
+    cout << "mean: " << mean<< endl;
+    cout << "normal: " << normal << endl;
+    cout << "cov: " << cov << endl;
+    cout << "es.eigenvalues(): " << es.eigenvalues()<< endl;
+    cout << "es.eigenvectors(): " << es.eigenvectors()<< endl;
+    cout << "planarity: " << planarity<< endl;
+   char c = getchar();
+  }*/
   return true;
 }
 

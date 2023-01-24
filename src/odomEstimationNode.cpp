@@ -29,6 +29,7 @@
 #include "iostream"
 #include "stdio.h"
 #include "string.h"
+#include "pcl/features/normal_3d.h"
 
 
 
@@ -170,6 +171,8 @@ void odom_estimation(){
       pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals;
       std::cout << "surf extract" << std::endl;
       surfEl.Extract(surfInNormals);
+
+
       std::cout << "surf extract finished" << std::endl;
       /*std::uint16_t max_r = 0, min_r = 20;
       for(auto && pnt : pointcloud_surf_in->points){

@@ -37,14 +37,12 @@ void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::P
     updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
     ros::Time t1 = ros::Time::now();
   }else{
-    cout << "initial" << endl;
     updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
     Eigen::Vector3d velocity = GetVelocity();
     dmapping::CompensateVelocity(edge_in, velocity);
     dmapping::CompensateVelocity(surf_in, velocity);
 
     ros::Time t1 = ros::Time::now();
-    cout << "final" << endl;
     updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
     ros::Time t2 = ros::Time::now();
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
@@ -118,7 +116,6 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
   odom.translation() = t_w_curr;
   if( update_type == UpdateType::VANILLA || update_type == UpdateType::REFINEMENT_AND_UPDATE){
     const bool UpdateMap = KeyFrameUpdate(downsampledSurfCloud, downsampledEdgeCloud, odom);
-    cout << "update?" << std::boolalpha << UpdateMap << endl;
     if(UpdateMap){
       addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
     }

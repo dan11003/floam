@@ -178,7 +178,10 @@ void odom_estimation(){
 
             //read data
             mutex_lock.lock();
-            std::cout <<"Odom - Queue: " << pointCloudSurfBuf.size() << std::endl;
+            if(pointCloudSurfBuf.size() > 10){
+            std::cout <<"Slow processing - in queue: " << pointCloudSurfBuf.size() << " scans."<< std::endl;
+            }
+
             if(!pointCloudSurfBuf.empty() && (pointCloudSurfBuf.front()->header.stamp.toSec()<pointCloudEdgeBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
                 pointCloudSurfBuf.pop();
                 ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
@@ -230,7 +233,7 @@ void odom_estimation(){
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
                 total_time+=time_temp;
-                ROS_INFO("Frame: %d\nAverage Average time / frame %lf [ms].\n Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
+                ROS_INFO("Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
 
             }
             *merged += *pointcloud_surf_in;

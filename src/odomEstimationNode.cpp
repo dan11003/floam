@@ -1,4 +1,4 @@
-// Author of FLOAM: Wang Han 
+// Author of FLOAM: Wang Han
 // Email wh200720041@gmail.com
 // Homepage https://wanghan.pro
 
@@ -186,17 +186,17 @@ void odom_estimation(){
                 pointCloudSurfBuf.pop();
                 ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
                 mutex_lock.unlock();
-                continue;  
+                continue;
             }
 
             if(!pointCloudEdgeBuf.empty() && (pointCloudEdgeBuf.front()->header.stamp.toSec()<pointCloudSurfBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
                 pointCloudEdgeBuf.pop();
                 ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
                 mutex_lock.unlock();
-                continue;  
+                continue;
             }
             tPrev = ros::Time::now();
-            //if time aligned 
+            //if time aligned
 
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_edge_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr pointcloud_surf_in(new pcl::PointCloud<vel_point::PointXYZIRT>());
@@ -295,7 +295,7 @@ void odom_estimation(){
         std::this_thread::sleep_for(dura);
     }
 }
-std::string CreateFolder(const std::string& basePath){
+std::string CreateFolder(const std::string& basePath, const std::string& prefix){
 
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
@@ -309,7 +309,7 @@ std::string CreateFolder(const std::string& basePath){
   std::strftime(buffer, 32, "%a_%Y.%m.%d_%H:%M:%S", ptm);
 
 
-  const std::string dir = basePath + "/" + std::string(buffer) + std::string("/");
+  const std::string dir = basePath + "/" + prefix +"_" + std::string(buffer) + std::string("/");
   std::cout << dir << std::endl;
   if (boost::filesystem::create_directories(dir)){
       std::cout << "Created new directory" << "\n";
@@ -335,8 +335,8 @@ int main(int argc, char **argv)
     bool save_odom = false;
 
 
-    nh.getParam("/scan_period", scan_period); 
-    nh.getParam("/vertical_angle", vertical_angle); 
+    nh.getParam("/scan_period", scan_period);
+    nh.getParam("/vertical_angle", vertical_angle);
     nh.getParam("/max_dis", max_dis);
     nh.getParam("/min_dis", min_dis);
     nh.getParam("/scan_line", scan_line);
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
     nh.getParam("/save_BALM", save_BALM);
     nh.getParam("/save_Posegraph", save_Posegraph);
     nh.getParam("/save_odom", save_odom);
-    directory = CreateFolder(directory);
+    directory = CreateFolder(directory, "FLOAM");
 
 
 

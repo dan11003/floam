@@ -6,7 +6,8 @@
     <arg name="save_balm" default="false" />
 
     <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" />
-    <!--arg name="param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->
+    <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->
+
     
     <!-- For Velodyne VLP-16 -->
     <param name="scan_line" value="16" />

@@ -8,12 +8,12 @@ NormalCloud::Ptr SurfElCloud::GetPointCloud(){
   NormalCloud::Ptr output(new NormalCloud());
   for(auto && surfEl : cloud){
     pcl::PointXYZINormal pnt;
-    pnt.x = surfEl.mean(0); pnt.y = surfEl.mean(1); pnt.z = surfEl.mean(2);
+    pnt.x = surfEl.centerPoint(0); pnt.y = surfEl.centerPoint(1); pnt.z = surfEl.centerPoint(2);
     pnt.normal_x = surfEl.normal(0); pnt.normal_y = surfEl.normal(1);  pnt.normal_z = surfEl.normal(2);
-    pnt.intensity = surfEl.l3;
+    pnt.intensity = surfEl.planarity;
     output->push_back(std::move(pnt));
   }
-
+  return output;
 }
 SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
   surf_in_ = surf_in;

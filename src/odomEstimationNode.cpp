@@ -172,6 +172,7 @@ void odom_estimation(){
       SurfElCloud surfElCloud;
       std::cout << "surf extract" << std::endl;
       surfEl.Extract(surfElCloud);
+      std::cout << "surf extracted" << std::endl;
       pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals = surfElCloud.GetPointCloud();
 
 

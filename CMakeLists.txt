@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   eigen_conversions
+  lio_sam
 )
 
 find_package(Eigen3)
@@ -47,7 +48,7 @@ link_directories(
 
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs lio_sam
   DEPENDS EIGEN3 PCL Ceres 
   INCLUDE_DIRS include
 )

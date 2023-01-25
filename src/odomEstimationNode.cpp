@@ -29,6 +29,7 @@
 #include "iostream"
 #include "stdio.h"
 #include "string.h"
+#include "lio_sam/cloud_info.h"
 
 using std::endl;
 using std::cout;
@@ -38,6 +39,7 @@ OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
+ros::Publisher pubLaserCloudInfo;
 lidar::Lidar lidar_param;
 Dump dataStorage;
 bool keep_running = true;
@@ -120,6 +122,48 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
     }
 }
 void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
+
+}
+void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr surf_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr deskewed, const ros::Time& thisStamp){
+  lio_sam::cloud_info cloudInfo;
+  cloudInfo.header.stamp = thisStamp;
+  cloudInfo.header.frame_id = "velodyne";
+
+  tf::Quaternion orientation;
+  tf::quaternionMsgToTF(startOdomMsg.pose.pose.orientation, orientation);
+
+  double roll, pitch, yaw;
+  tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
+
+  // Initial guess used in mapOptimization
+  cloudInfo.initialGuessX = startOdomMsg.pose.pose.position.x;
+  cloudInfo.initialGuessY = startOdomMsg.pose.pose.position.y;
+  cloudInfo.initialGuessZ = startOdomMsg.pose.pose.position.z;
+  cloudInfo.initialGuessRoll  = roll;
+  cloudInfo.initialGuessPitch = pitch;
+  cloudInfo.initialGuessYaw   = yaw;
+  cloudInfo.imuYawInit = yaw;
+  cloudInfo.imuPitchInit = pitch; //can be replaced with measured imu orientation!!
+  cloudInfo.imuRollInit = roll;
+  cloudInfo.imuAvailable = true;
+
+  cloudInfo.odomAvailable = true;
+
+
+  pcl::toROSMsg(*surf_in, cloudInfo.cloud_surface);
+  cloudInfo.cloud_surface.header.stamp = thisStamp;
+  cloudInfo.cloud_surface.header.frame_id = "velodyne";
+
+  pcl::toROSMsg(*surf_in, cloudInfo.cloud_corner);
+  cloudInfo.cloud_corner.header.stamp = thisStamp;
+  cloudInfo.cloud_corner.header.frame_id = "velodyne";
+
+
+  pcl::toROSMsg(*deskewed, cloudInfo.cloud_deskewed);
+  cloudInfo.cloud_deskewed.header.stamp = thisStamp;
+  cloudInfo.cloud_deskewed.header.frame_id = "velodyne";
+
+  pubLaserCloudInfo.publish(cloudInfo);
 
 }
 void odom_estimation(){
@@ -223,6 +267,9 @@ void odom_estimation(){
 
             PublishCloud("/scan_registered", *merged, "sensor", tNow);
 
+            PublishInfo(laserOdometry, pointcloud_surf_in, pointcloud_edge_in, merged, pointcloud_time);
+            //void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in, pcl::PointCloud<pcl::PointXYZI>::Ptr deskewed, const ros::Time& thisStamp){
+
             //PublishCloud("/scan_registered_uncompensated", *merged_raw, "sensor", tNow);
 
             Eigen::Matrix4d Trans; // Your Transformation Matrix
@@ -313,6 +360,7 @@ int main(int argc, char **argv)
     ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
 
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
+    pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/feature/cloud_info", 1);
     std::thread odom_estimation_process{odom_estimation};
 
     ros::Rate r(100); // 10 hz

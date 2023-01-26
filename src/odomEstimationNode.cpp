@@ -167,7 +167,7 @@ void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<vel_point::Poi
 void odom_estimation(){
     ros::Time tPrev = ros::Time::now();
     while(ros::ok()){
-        if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(1.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
+        if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(3.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
             keep_running = false;
             std::cout << "No more data to process \"odomEstimationNode.cpp\"" << std::endl;
             break;

@@ -308,9 +308,9 @@ std::string CreateFolder(const std::string& basePath, const std::string& prefix)
 
 
   const std::string dir = basePath + "/" + prefix +"_" + std::string(buffer) + std::string("/");
-  std::cout << dir << std::endl;
+
   if (boost::filesystem::create_directories(dir)){
-      std::cout << "Created new directory" << "\n";
+      std::cout << "FLOAM - Created new output directory: "  << dir << std::endl;
   }
   return dir;
 }

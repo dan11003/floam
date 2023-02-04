@@ -41,6 +41,9 @@ ros::Publisher pubLaserCloudInfo;
 lidar::Lidar lidar_param;
 Dump dataStorage;
 bool keep_running = true;
+std::string sensor_link = "floam_base_link";
+std::string sensor_link_now = "floam_base_link_now";
+std::string odom_link = "floam_odom";
 
 ros::Publisher pubLaserOdometry;
 
@@ -125,7 +128,7 @@ void Save(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const Eigen::Affine3d& T){
 void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr surf_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr deskewed, const ros::Time& thisStamp){
   lio_sam::cloud_info cloudInfo;
   cloudInfo.header.stamp = thisStamp;
-  cloudInfo.header.frame_id = "velodyne";
+  cloudInfo.header.frame_id = sensor_link;
 
   tf::Quaternion orientation;
   tf::quaternionMsgToTF(startOdomMsg.pose.pose.orientation, orientation);
@@ -150,16 +153,16 @@ void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<vel_point::Poi
 
   pcl::toROSMsg(*surf_in, cloudInfo.cloud_surface);
   cloudInfo.cloud_surface.header.stamp = thisStamp;
-  cloudInfo.cloud_surface.header.frame_id = "velodyne";
+  cloudInfo.cloud_surface.header.frame_id = sensor_link;
 
   pcl::toROSMsg(*surf_in, cloudInfo.cloud_corner);
   cloudInfo.cloud_corner.header.stamp = thisStamp;
-  cloudInfo.cloud_corner.header.frame_id = "velodyne";
+  cloudInfo.cloud_corner.header.frame_id = sensor_link;
 
 
   pcl::toROSMsg(*deskewed, cloudInfo.cloud_deskewed);
   cloudInfo.cloud_deskewed.header.stamp = thisStamp;
-  cloudInfo.cloud_deskewed.header.frame_id = "velodyne";
+  cloudInfo.cloud_deskewed.header.frame_id = sensor_link;
 
   pubLaserCloudInfo.publish(cloudInfo);
 
@@ -249,13 +252,13 @@ void odom_estimation(){
             transform.setOrigin( tf::Vector3(t_current.x(), t_current.y(), t_current.z()) );
             tf::Quaternion q(q_current.x(),q_current.y(),q_current.z(),q_current.w());
             transform.setRotation(q);
-            br.sendTransform(tf::StampedTransform(transform, pointcloud_time, "map", "base_link"));
-            br.sendTransform(tf::StampedTransform(transform, tNow, "map", "sensor"));
+            br.sendTransform(tf::StampedTransform(transform, pointcloud_time, odom_link, sensor_link));
+            br.sendTransform(tf::StampedTransform(transform, tNow, odom_link, sensor_link_now));
 
             // publish odometry
             nav_msgs::Odometry laserOdometry;
-            laserOdometry.header.frame_id = "map";
-            laserOdometry.child_frame_id = "base_link";
+            laserOdometry.header.frame_id = odom_link;
+            laserOdometry.child_frame_id = sensor_link_now;
             laserOdometry.header.stamp = pointcloud_time; // ros::Time::now();
             laserOdometry.pose.pose.orientation.x = q_current.x();
             laserOdometry.pose.pose.orientation.y = q_current.y();
@@ -266,7 +269,7 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.z = t_current.z();
             pubLaserOdometry.publish(laserOdometry);
 
-            PublishCloud("/scan_registered", *merged, "sensor", tNow);
+            PublishCloud("/scan_registered", *merged, sensor_link_now, tNow);
 
             PublishInfo(laserOdometry, pointcloud_surf_in, pointcloud_edge_in, merged, pointcloud_time);
             //void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in, pcl::PointCloud<pcl::PointXYZI>::Ptr deskewed, const ros::Time& thisStamp){

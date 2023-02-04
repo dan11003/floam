@@ -25,7 +25,7 @@
     <param name="scan_period" value="0.1" />
 
     <param name="vertical_angle" type="double" value="2.0" />
-    <param name="map_resolution" type="double" value="0.1" />
+    <param name="map_resolution" type="double" value="0.5" />
     <param name="output_downsample_size" type="double" value="0.3" />
     <param name="deskew" type="bool" value="true" />
 
@@ -47,7 +47,7 @@
     <node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/>
     
 
-    <include file="$(find lio_sam)/launch/slam_floam_integration.launch">
+    <include file="$(find lio_sam)/launch/slam_gps.launch">
       <arg name="slam_param_file" value="$(arg slam_param_file)" />
     </include>
     

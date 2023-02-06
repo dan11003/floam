@@ -1,9 +1,16 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="save_posegraph" default="false" />
-    <arg name="save_odom" default="true" />
-    <arg name="save_balm" default="false" />
+
+    <arg name="export_odom_pcd" default="true" />
+    <arg name="odom_save_posegraph" default="false" />
+    <arg name="odom_save_odom" default="false" />
+    <arg name="odom_save_balm" default="false" />
+
+    <arg name="export_slam_pcd" default="true" />
+    <arg name="slam_save_posegraph" default="false" />
+    <arg name="slam_save_odom" default="false" />
+    <arg name="slam_save_balm" default="true" />
 
     <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" />
     <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->
@@ -20,7 +27,7 @@
     <!-- For Velodyne HDL-64 
     <param name="scan_line" value="64" />
     -->
-    <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
+
     <!--- Sim Time -->
     <param name="scan_period" value="0.1" />
 
@@ -35,9 +42,17 @@
     <param name="loss_function" type="string" value="Cauchy" />
     <!--param name="loss_function" type="string" value="Cauchy" /-->  <!-- Structor FLOAM -->
 
-    <param name="save_BALM" type="bool" value="$(arg save_balm)" />
-    <param name="save_Posegraph" type="bool" value="$(arg save_posegraph)" />
-    <param name="save_odom" type="bool" value="$(arg save_odom)" />
+    <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
+    <param name="export_odom_pcd" type="bool" value="$(arg export_odom_pcd)" />
+    <param name="odom_save_posegraph" type="bool" value="$(arg odom_save_posegraph)" />
+    <param name="odom_save_odom" type="bool" value="$(arg odom_save_odom)" />
+    <param name="odom_save_balm" type="bool" value="$(arg odom_save_balm)" />
+
+    <!-- SLAM EXPORTS -->
+    <param name="export_slam_pcd" type="bool" value="$(arg export_slam_pcd)" />
+    <param name="slam_save_posegraph" type="bool" value="$(arg slam_save_posegraph)" />
+    <param name="slam_save_odom" type="bool" value="$(arg slam_save_odom)" />
+    <param name="slam_save_balm" type="bool" value="$(arg slam_save_balm)" />
 
     <param name="max_dis" type="double" value="90.0" />
     <param name="min_dis" type="double" value="0.5" />

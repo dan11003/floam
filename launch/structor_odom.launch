@@ -1,9 +1,13 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="save_posegraph" default="false" />
-    <arg name="save_odom" default="true" />
-    <arg name="save_balm" default="false" />
+
+    <arg name="export_odom_pcd" default="true" />
+    <arg name="odom_save_posegraph" default="false" />
+    <arg name="odom_save_odom" default="false" />
+    <arg name="odom_save_balm" default="false" />
+
+
     
     <!-- For Velodyne VLP-16 -->
     <param name="scan_line" value="16" />
@@ -31,10 +35,10 @@
     <param name="loss_function" type="string" value="Cauchy" />
     <!--param name="loss_function" type="string" value="Cauchy" /-->  <!-- Structor FLOAM -->
 
-    <param name="save_BALM" type="bool" value="$(arg save_balm)" />
-    <param name="save_Posegraph" type="bool" value="$(arg save_posegraph)" />
+    <param name="save_posegraph" type="bool" value="$(arg save_posegraph)" />
     <param name="save_odom" type="bool" value="$(arg save_odom)" />
-
+    <param name="save_balm" type="bool" value="$(arg save_balm)" />
+    <param name="export_odom_pcd" type="bool" value="$(arg export_odom_pcd)" />
 
 
     <param name="max_dis" type="double" value="90.0" />

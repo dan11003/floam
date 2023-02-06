@@ -70,14 +70,14 @@ void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, 
   boost::filesystem::create_directories(directory);
   pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
-  std::cout << "Save merged point cloud to:\n" << directory << std::endl <<  std::endl;
+  std::cout << "\"FLOAM\"  - Save merged point cloud to:\n" << directory << std::endl <<  std::endl;
 
   for(int i = 0; i < poses.size() ; i++) {
       pcl::PointCloud<pcl::PointXYZI> tmp_transformed;
       pcl::transformPointCloud(*clouds[i], tmp_transformed, poses[i]);
       *merged_transformed += tmp_transformed;
   }
-  cout << "Downsample point cloud resolution " << downsample_size << endl;
+  cout << "\"FLOAM\"  - Downsample point cloud resolution " << downsample_size << endl;
 
 
   pcl::VoxelGrid<pcl::PointXYZI> sor;
@@ -90,7 +90,7 @@ void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, 
     const std::string path_downsampled = directory + std::string("floam_merged_downsampled_leaf_") + std::to_string(downsample_size) + ".pcd";
     pcl::io::savePCDFileBinary(path_downsampled, merged_downsamapled);
   }else{
-    std::cout << "No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
+    std::cout << "\"FLOAM\"  - No downsampled point cloud saved - increase \"output_downsample_size\"" << std::endl;
   }
 
 
@@ -101,7 +101,7 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
     boost::filesystem::create_directories(directory);
     const std::string filename = directory + "alidarPose.csv";
     std::fstream stream(filename.c_str(), std::fstream::out);
-    std::cout << "Save BALM to:\n" << directory << std::endl << std::endl;
+    std::cout << "\"FLOAM\"  - Save BALM to:\n" << directory << std::endl << std::endl;
     /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
     std::cout << "Saving poses size: " <<poses.size() << std::endl;*/
     pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
@@ -172,7 +172,7 @@ void odom_estimation(){
     while(ros::ok()){
         if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(3.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
             keep_running = false;
-            std::cout << "No more data to process \"odomEstimationNode.cpp\"" << std::endl;
+            std::cout << "\"FLOAM\"  - No more data to process" << std::endl;
             break;
         }
         if(!pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty()){
@@ -180,19 +180,19 @@ void odom_estimation(){
             //read data
             mutex_lock.lock();
             if(pointCloudSurfBuf.size() > 10){
-            std::cout <<"Slow processing - in queue: " << pointCloudSurfBuf.size() << " scans."<< std::endl;
+            std::cout <<"\"FLOAM\" - Slow processing - in queue: " << pointCloudSurfBuf.size() << " scans."<< std::endl;
             }
 
             if(!pointCloudSurfBuf.empty() && (pointCloudSurfBuf.front()->header.stamp.toSec()<pointCloudEdgeBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
                 pointCloudSurfBuf.pop();
-                ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
+                ROS_WARN_ONCE("\"FLOAM\"  - Time stamp unaligned with extra point cloud, pls check your data --> odom correction");
                 mutex_lock.unlock();
                 continue;
             }
 
             if(!pointCloudEdgeBuf.empty() && (pointCloudEdgeBuf.front()->header.stamp.toSec()<pointCloudSurfBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
                 pointCloudEdgeBuf.pop();
-                ROS_WARN_ONCE("time stamp unaligned with extra point cloud, pls check your data --> odom correction");
+                ROS_WARN_ONCE("\"FLOAM\"  - Time stamp unaligned with extra point cloud, pls check your data --> odom correction");
                 mutex_lock.unlock();
                 continue;
             }
@@ -224,7 +224,7 @@ void odom_estimation(){
                 pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(pointcloud_surf_in);
                 odomEstimation.initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in);
                 is_odom_inited = true;
-                ROS_INFO("odom inited");
+                ROS_INFO("\"FLOAM\"  - odom inited");
             }else{
                 std::chrono::time_point<std::chrono::system_clock> start, end;
                 start = std::chrono::system_clock::now();
@@ -234,7 +234,7 @@ void odom_estimation(){
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
                 total_time+=time_temp;
-                ROS_INFO("Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
+                ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
 
             }
             *merged += *pointcloud_surf_in;
@@ -313,7 +313,7 @@ std::string CreateFolder(const std::string& basePath, const std::string& prefix)
   const std::string dir = basePath + "/" + prefix +"_" + std::string(buffer) + std::string("/");
 
   if (boost::filesystem::create_directories(dir)){
-      std::cout << "FLOAM - Created new output directory: "  << dir << std::endl;
+      std::cout << "\"FLOAM\" - Created new output directory: "  << dir << std::endl;
   }
   return dir;
 }
@@ -334,6 +334,7 @@ int main(int argc, char **argv)
     bool save_Posegraph = false;
     bool save_BALM = true;
     bool save_odom = false;
+    bool export_pcd = true;
 
 
     nh.getParam("/scan_period", scan_period);
@@ -346,10 +347,14 @@ int main(int argc, char **argv)
     nh.getParam("/output_downsample_size", output_downsample_size);
     nh.getParam("/loss_function", loss_function);
     nh.getParam("/deskew", deskew);
-    nh.getParam("/save_BALM", save_BALM);
-    nh.getParam("/save_Posegraph", save_Posegraph);
-    nh.getParam("/save_odom", save_odom);
+    nh.param<bool>("/odom_save_balm", save_BALM, false);
+    nh.param<bool>("/odom_save_posegraph", save_Posegraph, false);
+    nh.param<bool>("/odom_save_odom", save_odom, false);
+    nh.param<bool>("/export_odom_pcd", export_pcd, true);
+    cout << "FLOAM save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
+
     directory = CreateFolder(directory, "FLOAM");
+
 
 
 
@@ -373,22 +378,28 @@ int main(int argc, char **argv)
       r.sleep();
     }
 
-    std::cout << "output directory: " << directory << std::endl;
-    std::cout << "Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
-    SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
-    if(save_BALM){
+
+    if(export_pcd){
+      std::cout << "\"FLOAM\" - output directory: " << directory << std::endl;
+      std::cout << "\"FLOAM\" - Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
+      SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
+    }
+    else{
+      std::cout << "\"FLOAM\"  - Saving disabled " << std::endl;
+    }
+    if(save_BALM && export_pcd){
       //cout << "Save BALM data " << endl;
       SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
     }
-    if(save_Posegraph){
+    if(save_Posegraph && export_pcd){
       //cout << "Save Posegraph" << endl;
       SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
     }
-    if(save_odom){
+    if(save_odom && export_pcd){
       //cout << "Save Posegraph" << endl;
       SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
     }
-    std::cout << "Program finished nicely" << std::endl << std::endl;
+    std::cout << "\"FLOAM\" - Program finished nicely" << std::endl << std::endl;
 
     return 0;
 }

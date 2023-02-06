@@ -6,7 +6,7 @@ void SavePosegraph(
     const std::vector<double>& keyframe_stamps,
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds){
 
-  std::cout << "Save posegraph to:\n" << dump_directory << std::endl << std::endl;
+  std::cout << "\"FLOAM\" - Save posegraph to:\n" << dump_directory << std::endl << std::endl;
 
   boost::filesystem::create_directories(dump_directory);
   std::ofstream graph_ofs(dump_directory + "/graph.g2o");
@@ -86,7 +86,7 @@ void SaveOdom(
 
   boost::filesystem::create_directories(dump_directory);
 
-  std::cout << "Save odom to:\n" << dump_directory << std::endl << std::endl;
+  std::cout << "\"FLOAM\" - Save odom to:\n" << dump_directory << std::endl << std::endl;
   //std::cout << "Save clouds: " << clouds.size() << std::endl;
   for(int i = 0; i < clouds.size(); i++) {
 

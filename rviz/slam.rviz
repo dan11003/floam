@@ -7,12 +7,13 @@ Panels:
         - /Global Options1
         - /links1
         - /links1/TF1/Frames1
-        - /Odometry1
         - /Odometry1/Odom lidar1
         - /Odometry1/Odom lidar1/Shape1
         - /Odometry1/Odometry1
         - /Odometry1/Odometry1/Shape1
         - /Odometry2
+        - /Odometry2/Shape1
+        - /Odometry2/Covariance1
         - /Odometry2/Covariance1/Position1
         - /Odometry2/Covariance1/Orientation1
         - /Odometry3
@@ -542,21 +543,21 @@ Visualization Manager:
           Color: 204; 51; 204
           Scale: 1
           Value: true
-        Value: true
+        Value: false
       Enabled: true
       Keep: 100000
       Name: Odometry
-      Position Tolerance: 0.10000000149011612
+      Position Tolerance: 1
       Queue Size: 10
       Shape:
-        Alpha: 0
+        Alpha: 1
         Axes Length: 1
         Axes Radius: 0.10000000149011612
         Color: 255; 25; 0
         Head Length: 1
         Head Radius: 1
-        Shaft Length: 1
-        Shaft Radius: 1
+        Shaft Length: 0.5
+        Shaft Radius: 0.5
         Value: Arrow
       Topic: /odometry/gps
       Unreliable: false
@@ -679,7 +680,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 53.95270919799805
+      Distance: 126.21351623535156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -687,17 +688,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 2.560924768447876
-        Y: 4.086268901824951
-        Z: 17.116302490234375
+        X: -23.70816993713379
+        Y: 10.6983642578125
+        Z: 9.425830841064453
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5547963380813599
+      Pitch: 1.2347966432571411
       Target Frame: <Fixed Frame>
-      Yaw: 1.3535434007644653
+      Yaw: 5.763545513153076
     Saved: ~
 Window Geometry:
   Displays:

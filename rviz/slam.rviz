@@ -13,12 +13,10 @@ Panels:
         - /Odometry1/Odometry1/Shape1
         - /Odometry2
         - /Odometry2/Shape1
-        - /Odometry2/Covariance1
         - /Odometry2/Covariance1/Position1
         - /Odometry2/Covariance1/Orientation1
         - /Odometry3
         - /Odometry3/Shape1
-        - /Odometry3/Covariance1
         - /Odometry3/Covariance1/Position1
       Splitter Ratio: 0.47835737466812134
     Tree Height: 701
@@ -578,14 +576,14 @@ Visualization Manager:
           Color: 204; 51; 204
           Scale: 0.10000000149011612
           Value: true
-        Value: true
-      Enabled: false
-      Keep: 100
+        Value: false
+      Enabled: true
+      Keep: 10000000
       Name: Odometry
       Position Tolerance: 0.10000000149011612
       Queue Size: 10
       Shape:
-        Alpha: 0
+        Alpha: 1
         Axes Length: 1
         Axes Radius: 0.10000000149011612
         Color: 252; 233; 79
@@ -596,7 +594,7 @@ Visualization Manager:
         Value: Arrow
       Topic: /odometry/navsat
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -680,7 +678,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 126.21351623535156
+      Distance: 36.27738952636719
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -688,17 +686,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -23.70816993713379
-        Y: 10.6983642578125
-        Z: 9.425830841064453
+        X: 9.257567405700684
+        Y: -10.816936492919922
+        Z: 1.3420730829238892
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2347966432571411
-      Target Frame: <Fixed Frame>
-      Yaw: 5.763545513153076
+      Pitch: 1.2897965908050537
+      Target Frame: base_link
+      Yaw: 5.268585205078125
     Saved: ~
 Window Geometry:
   Displays:

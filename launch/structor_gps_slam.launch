@@ -9,7 +9,7 @@
     <arg name="export_slam_pcd" default="true" />
     <arg name="slam_save_posegraph" default="false" />
     <arg name="slam_save_odom" default="false" />
-    <arg name="slam_save_balm" default="true" />
+    <arg name="slam_save_balm" default="false" />
 
     <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" />
     <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->

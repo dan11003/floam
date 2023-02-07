@@ -28,25 +28,47 @@
 #include "stdio.h"
 #include "string.h"
 #include "lio_sam/cloud_info.h"
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include "dataHandler.h"
 
 using std::endl;
 using std::cout;
 
+
+using namespace sensor_msgs;
+using namespace message_filters;
+
 bool deskew = false;
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
-std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
-std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
+typedef struct
+{
+ sensor_msgs::PointCloud2ConstPtr pointCloudEdge;
+ sensor_msgs::PointCloud2ConstPtr pointCloudSurf;
+ sensor_msgs::ImuConstPtr imu;
+}ProcessedData;
+std::queue<ProcessedData> ProcessedDataBuf;
+/*std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
+std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;*/
 ros::Publisher pubLaserCloudInfo;
 lidar::Lidar lidar_param;
 Dump dataStorage;
 bool keep_running = true;
-std::string sensor_link = "floam_base_link";
-std::string sensor_link_now = "floam_base_link_now";
-std::string odom_link = "floam_odom";
+std::string sensor_link = "base_link";
+std::string sensor_link_now = "base_link_now";
+std::string odom_link = "odom";
 
 ros::Publisher pubLaserOdometry;
+ros::Publisher pubLaserOdometryNow;
 
+void TrippleCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgEdge, const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgSurf, const sensor_msgs::ImuConstPtr& imuMsg)
+{
+  ProcessedDataBuf.push(ProcessedData{laserCloudMsgEdge, laserCloudMsgSurf, imuMsg});
+}
+
+/*
 void velodyneSurfHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 {
     mutex_lock.lock();
@@ -58,7 +80,7 @@ void velodyneEdgeHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
     mutex_lock.lock();
     pointCloudEdgeBuf.push(laserCloudMsg);
     mutex_lock.unlock();
-}
+}*/
 
 bool is_odom_inited = false;
 double total_time =0;
@@ -175,27 +197,14 @@ void odom_estimation(){
             std::cout << "\"FLOAM\"  - No more data to process" << std::endl;
             break;
         }
-        if(!pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty()){
+        if(!ProcessedDataBuf.empty()){
 
             //read data
             mutex_lock.lock();
-            if(pointCloudSurfBuf.size() > 10){
-            std::cout <<"\"FLOAM\" - Slow processing - in queue: " << pointCloudSurfBuf.size() << " scans."<< std::endl;
+            if(ProcessedDataBuf.size() > 10){
+            std::cout <<"\"FLOAM\" - Slow processing - in queue: " << ProcessedDataBuf.size() << " scans."<< std::endl;
             }
 
-            if(!pointCloudSurfBuf.empty() && (pointCloudSurfBuf.front()->header.stamp.toSec()<pointCloudEdgeBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
-                pointCloudSurfBuf.pop();
-                ROS_WARN_ONCE("\"FLOAM\"  - Time stamp unaligned with extra point cloud, pls check your data --> odom correction");
-                mutex_lock.unlock();
-                continue;
-            }
-
-            if(!pointCloudEdgeBuf.empty() && (pointCloudEdgeBuf.front()->header.stamp.toSec()<pointCloudSurfBuf.front()->header.stamp.toSec()-0.5*lidar_param.scan_period)){
-                pointCloudEdgeBuf.pop();
-                ROS_WARN_ONCE("\"FLOAM\"  - Time stamp unaligned with extra point cloud, pls check your data --> odom correction");
-                mutex_lock.unlock();
-                continue;
-            }
             tPrev = ros::Time::now();
             //if time aligned
 
@@ -205,13 +214,15 @@ void odom_estimation(){
             pcl::PointCloud<vel_point::PointXYZIRT>::Ptr merged_raw(new pcl::PointCloud<vel_point::PointXYZIRT>());
 
 
-            pcl::fromROSMsg(*pointCloudEdgeBuf.front(), *pointcloud_edge_in);
-            pcl::fromROSMsg(*pointCloudSurfBuf.front(), *pointcloud_surf_in);
-            pcl_conversions::toPCL(pointCloudEdgeBuf.front()->header.stamp, merged->header.stamp);
-            pcl_conversions::toPCL(pointCloudEdgeBuf.front()->header.stamp, merged_raw->header.stamp);
-            ros::Time pointcloud_time = (pointCloudSurfBuf.front())->header.stamp;
-            pointCloudEdgeBuf.pop();
-            pointCloudSurfBuf.pop();
+            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudEdge, *pointcloud_edge_in);
+            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudSurf, *pointcloud_surf_in);
+            pcl_conversions::toPCL(ProcessedDataBuf.front().pointCloudEdge->header.stamp, merged->header.stamp);
+            pcl_conversions::toPCL(ProcessedDataBuf.front().pointCloudEdge->header.stamp, merged_raw->header.stamp);
+            ros::Time pointcloud_time = (ProcessedDataBuf.front().pointCloudSurf)->header.stamp;
+            sensor_msgs::Imu ImuData = *ProcessedDataBuf.front().imu;
+            Eigen::Quaterniond qCurrent = dmapping::Imu2Orientation(ImuData);
+
+            ProcessedDataBuf.pop();
             mutex_lock.unlock();
 
             *merged_raw += *pointcloud_edge_in;
@@ -222,13 +233,13 @@ void odom_estimation(){
             if(is_odom_inited == false){
                 pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(pointcloud_edge_in);
                 pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(pointcloud_surf_in);
-                odomEstimation.initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in);
+                odomEstimation.initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in, qCurrent);
                 is_odom_inited = true;
                 ROS_INFO("\"FLOAM\"  - odom inited");
             }else{
                 std::chrono::time_point<std::chrono::system_clock> start, end;
                 start = std::chrono::system_clock::now();
-                odomEstimation.UpdatePointsToMapSelector(pointcloud_edge_in, pointcloud_surf_in, deskew);
+                odomEstimation.UpdatePointsToMapSelector(pointcloud_edge_in, pointcloud_surf_in, deskew, qCurrent);
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<float> elapsed_seconds = end - start;
                 total_frame++;
@@ -258,7 +269,7 @@ void odom_estimation(){
             // publish odometry
             nav_msgs::Odometry laserOdometry;
             laserOdometry.header.frame_id = odom_link;
-            laserOdometry.child_frame_id = sensor_link_now;
+            laserOdometry.child_frame_id = sensor_link;
             laserOdometry.header.stamp = pointcloud_time; // ros::Time::now();
             laserOdometry.pose.pose.orientation.x = q_current.x();
             laserOdometry.pose.pose.orientation.y = q_current.y();
@@ -267,7 +278,15 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.x = t_current.x();
             laserOdometry.pose.pose.position.y = t_current.y();
             laserOdometry.pose.pose.position.z = t_current.z();
+
+
+
+            nav_msgs::Odometry laserOdometryNow = laserOdometry;
+            laserOdometryNow.header.stamp = ros::Time::now();
+            laserOdometryNow.child_frame_id = sensor_link_now;
+
             pubLaserOdometry.publish(laserOdometry);
+            pubLaserOdometryNow.publish(laserOdometryNow);
 
             PublishCloud("/scan_registered", *merged, sensor_link_now, tNow);
 
@@ -365,9 +384,19 @@ int main(int argc, char **argv)
     lidar_param.setMinDistance(min_dis);
 
     odomEstimation.init(lidar_param, map_resolution, loss_function);
-    ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100, velodyneEdgeHandler);
-    ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
+    //ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100, velodyneEdgeHandler);
+    //ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
+    //void callback(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgEdge, const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgSurf, sensor_msgs::ImuConstPtr& imuMsg)
+    message_filters::Subscriber<PointCloud2> sub1(nh, "/laser_cloud_edge", 1);
+     message_filters::Subscriber<PointCloud2> sub2(nh, "/laser_cloud_surf", 1);
+     message_filters::Subscriber<Imu> sub3(nh, "/synced/imu/data", 1);
 
+     typedef sync_policies::ApproximateTime<PointCloud2, PointCloud2,Imu> MySyncPolicy;
+     // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
+     Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub1, sub2, sub3);
+     sync.registerCallback(boost::bind(&TrippleCallback, _1, _2, _3));
+
+    pubLaserOdometryNow = nh.advertise<nav_msgs::Odometry>("/odom_now", 100);
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
     pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/feature/cloud_info", 1);
     std::thread odom_estimation_process{odom_estimation};

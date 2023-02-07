@@ -59,9 +59,9 @@ class OdomEstimationClass
 
     void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 
-    void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in);
+    void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
 
-    void UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew);
+    void UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu);
 
     /*!
          * \brief updatePointsToMap
@@ -69,9 +69,9 @@ class OdomEstimationClass
          * \param surf_in
          * \param initial_iteration if set to true, perform one step using constant
          */
-    void updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
+    void updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type = UpdateType::VANILLA ); // ,
 
-    void updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type = UpdateType::VANILLA); // ,
+    void updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type = UpdateType::VANILLA); // ,
 
     void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
 
@@ -83,6 +83,7 @@ class OdomEstimationClass
 
     Eigen::Isometry3d odom;
 
+
     pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudCornerMap;
     pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudSurfMap;
 private:
@@ -91,6 +92,7 @@ private:
     Eigen::Map<Eigen::Quaterniond> q_w_curr = Eigen::Map<Eigen::Quaterniond>(parameters);
     Eigen::Map<Eigen::Vector3d> t_w_curr = Eigen::Map<Eigen::Vector3d>(parameters + 4);
     Eigen::Isometry3d last_odom;
+    Eigen::Quaterniond imu_prev;
 
     //kd-tree
     pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtreeEdgeMap;

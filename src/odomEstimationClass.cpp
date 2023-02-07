@@ -25,41 +25,59 @@ void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution, 
   lidar_param_ = lidar_param;
 }
 
-void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
-  *laserCloudCornerMap += *edge_in;
-  *laserCloudSurfMap += *surf_in;
+void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu){
+  odom = Eigen::Isometry3d(qImu);
+  imu_prev = qImu;
+  pcl::transformPointCloud(*edge_in, *laserCloudCornerMap, Eigen::Vector3d(0,0,0), qImu);
+  pcl::transformPointCloud(*surf_in, *laserCloudSurfMap,   Eigen::Vector3d(0,0,0), qImu);
+  /**laserCloudCornerMap += *edge_in;
+  *laserCloudSurfMap += *surf_in;*/
   optimization_count=12;
 }
 
-void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew){
+void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu){
   ros::Time t0 = ros::Time::now();
   if(!deskew){
-    updatePointsToMap(edge_in, surf_in,  UpdateType::VANILLA);
+    updatePointsToMap(edge_in, surf_in, qImu, UpdateType::VANILLA);
     ros::Time t1 = ros::Time::now();
   }else{
-    updatePointsToMap(edge_in, edge_in, UpdateType::INITIAL_ITERATION);
+    updatePointsToMap(edge_in, edge_in, qImu, UpdateType::INITIAL_ITERATION);
     Eigen::Vector3d velocity = GetVelocity();
     dmapping::CompensateVelocity(edge_in, velocity);
     dmapping::CompensateVelocity(surf_in, velocity);
 
     ros::Time t1 = ros::Time::now();
-    updatePointsToMap(edge_in, surf_in, UpdateType::REFINEMENT_AND_UPDATE);
+    updatePointsToMap(edge_in, surf_in, qImu, UpdateType::REFINEMENT_AND_UPDATE);
     ros::Time t2 = ros::Time::now();
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
   }
 }
 
-void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const UpdateType update_type){
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& edge_in, const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
   pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
   pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in_XYZI = VelToIntensityCopy(surf_in);
-  updatePointsToMap(edge_in_XYZI, surf_in_XYZI, update_type);
+  updatePointsToMap(edge_in_XYZI, surf_in_XYZI, qImu, update_type);
 }
-void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const UpdateType update_type){
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
 
   if(optimization_count>2)
     optimization_count--;
 
-  Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
+  const Eigen::Vector3d transl_prediction = odom.translation() + (odom.translation()  - last_odom.translation());
+  Eigen::Quaterniond qOdom(odom.linear());
+  Eigen::Quaterniond rot_prediction = qOdom*imu_prev.inverse()*qImu;
+
+  //Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
+  Eigen::Matrix4d prediction = Eigen::Matrix4d::Zero();
+  Eigen::Matrix4d pred_mat;
+  pred_mat.setIdentity();
+  pred_mat.block<3,3>(0,0) = rot_prediction.toRotationMatrix();
+  pred_mat.block<3,1>(0,3) = transl_prediction;
+  //cout << pred_mat << endl;
+  Eigen::Isometry3d odom_prediction(pred_mat);
+  imu_prev = qImu;
+
+
   if( update_type == UpdateType::VANILLA || UpdateType::INITIAL_ITERATION ){
     last_odom = odom;
     odom = odom_prediction;

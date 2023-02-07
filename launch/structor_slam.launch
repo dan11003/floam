@@ -1,33 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
+    <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" /-->
+    <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" />
 
-    <arg name="export_odom_pcd" default="true" />
-    <arg name="odom_save_posegraph" default="false" />
-    <arg name="odom_save_odom" default="false" />
-    <arg name="odom_save_balm" default="false" />
-
-    <arg name="export_slam_pcd" default="true" />
-    <arg name="slam_save_posegraph" default="false" />
-    <arg name="slam_save_odom" default="false" />
-    <arg name="slam_save_balm" default="true" />
-
-    <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" />
-    <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->
-
-    
     <!-- For Velodyne VLP-16 -->
     <param name="scan_line" value="16" />
-    
-
-    <!-- For Velodyne HDL-32 
-    <param name="scan_line" value="32" />
-    -->
-
-    <!-- For Velodyne HDL-64 
-    <param name="scan_line" value="64" />
-    -->
-
     <!--- Sim Time -->
     <param name="scan_period" value="0.1" />
 
@@ -35,28 +13,27 @@
     <param name="map_resolution" type="double" value="0.5" />
     <param name="output_downsample_size" type="double" value="0.3" />
     <param name="deskew" type="bool" value="true" />
-
     <param name="imu_topic" type="string" value="/nav/filtered_imu/data" /> <!-- Structor FLOAM -->
-    <!--param name="imu_topic" type="string" value="/imu/data" /-->  <!-- Structor FLOAM -->
-
     <param name="loss_function" type="string" value="Cauchy" />
-    <!--param name="loss_function" type="string" value="Cauchy" /-->  <!-- Structor FLOAM -->
 
+
+    <!-- EXPORTS -->
     <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
-    <param name="export_odom_pcd" type="bool" value="$(arg export_odom_pcd)" />
-    <param name="odom_save_posegraph" type="bool" value="$(arg odom_save_posegraph)" />
-    <param name="odom_save_odom" type="bool" value="$(arg odom_save_odom)" />
-    <param name="odom_save_balm" type="bool" value="$(arg odom_save_balm)" />
+    <!-- ODOM EXPORTS -->
+    <param name="export_odom_pcd" type="bool" value="false" />
+    <param name="odom_save_posegraph" type="bool" value="false" />
+    <param name="odom_save_odom" type="bool" value="false" />
+    <param name="odom_save_balm" type="bool" value="false" />
 
     <!-- SLAM EXPORTS -->
-    <param name="export_slam_pcd" type="bool" value="$(arg export_slam_pcd)" />
-    <param name="slam_save_posegraph" type="bool" value="$(arg slam_save_posegraph)" />
-    <param name="slam_save_odom" type="bool" value="$(arg slam_save_odom)" />
-    <param name="slam_save_balm" type="bool" value="$(arg slam_save_balm)" />
+    <param name="export_slam_pcd" type="bool" value="true" />
+    <param name="slam_save_posegraph" type="bool" value="false" />
+    <param name="slam_save_odom" type="bool" value="false" />
+    <param name="slam_save_balm" type="bool" value="false" />
 
     <param name="max_dis" type="double" value="90.0" />
     <param name="min_dis" type="double" value="0.5" />
-    <!--- -->
+
     <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
     <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
     <node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/>

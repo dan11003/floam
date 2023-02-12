@@ -123,10 +123,14 @@ void laser_processing(){
 
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_surf(new pcl::PointCloud<vel_point::PointXYZIRTC>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_less_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_less_flat(new pcl::PointCloud<vel_point::PointXYZIRTC>());
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
-      laserProcessing.featureExtraction(pointcloud_in, pointcloud_edge, pointcloud_surf);
+      cout << "extract" << endl;
+      laserProcessing.featureExtraction(pointcloud_in, pointcloud_edge, pointcloud_surf, pointcloud_less_flat, pointcloud_less_edge);
+      cout << "extracted" << endl;
       end = std::chrono::system_clock::now();
       std::chrono::duration<float> elapsed_seconds = end - start;
       total_frame++;

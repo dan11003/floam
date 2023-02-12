@@ -41,9 +41,9 @@
     <param name="max_dis" type="double" value="90.0" />
     <param name="min_dis" type="double" value="0.5" />
     <!--- -->
-    <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
+    <!--node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/-->
     <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
-    <node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/>
+    <!--node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/-->
 
     <node pkg="tf" type="static_transform_publisher" name="word2map_tf"  args="0 0 0 0 0 0 /world /map 10" />
     

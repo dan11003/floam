@@ -8,7 +8,7 @@ void LaserProcessingClass::init(lidar::Lidar lidar_param_in){
   lidar_param = lidar_param_in;
 
 }
-void LaserProcessingClass::RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans, std::vector<std::vector<double> > range_image){
+void LaserProcessingClass::RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr>& laserCloudScans, std::vector<std::vector<double> >& range_image){
   const int N_SCANS = lidar_param.num_lines;
   range_image.resize(N_SCANS);
   for(int i=0;i<N_SCANS;i++){
@@ -75,20 +75,18 @@ void LaserProcessingClass::RingExtraction(const pcl::PointCloud<vel_point::Point
   }
 }
 
-void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf){
+void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge){
 
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*pc_in, indices);
-  pcl::PointCloud<vel_point::PointXYZIRTC> curved;
+  VelCurve curved;
 
 
   int N_SCANS = lidar_param.num_lines;
   std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans;
-  //RingExtraction(pc_in, laserCloudScans);
-  //std::cout << "featureExtraction" << pc_in->size() << std::endl;
-  std::vector<std::vector<double> > range_image(N_SCANS);
+  std::vector<std::vector<double> > range_image;
   RingExtractionVelodyne(pc_in, laserCloudScans, range_image);
-  pcl::PointCloud<vel_point::PointXYZIRTC> feature_cloud;
+  VelCurve feature_cloud;
 
 
 
@@ -119,15 +117,21 @@ void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::Po
       }
       std::vector<Double2d> subCloudCurvature(cloudCurvature.begin()+sector_start,cloudCurvature.begin()+sector_end);
 
-      featureExtractionFromSector(laserCloudScans[i],subCloudCurvature, pc_out_edge, pc_out_surf);
+      featureExtractionFromSector(laserCloudScans[i],subCloudCurvature, pc_out_edge, pc_out_surf, pc_out_less_flat, pc_out_less_edge);
 
     }
+
   }// Per ring
   PublishCloud("feature_extract", feature_cloud, "base_link", ros::Time::now());
 }
 
 
-void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_edge, pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr& pc_out_surf){
+void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in,
+                                                       std::vector<Double2d>& cloudCurvature,
+                                                       VelCurve::Ptr& pc_out_edge,
+                                                       VelCurve::Ptr& pc_out_surf,
+                                                       VelCurve::Ptr& pc_out_less_flat,
+                                                       VelCurve::Ptr& pc_out_less_edge){
 
   std::sort(cloudCurvature.begin(), cloudCurvature.end(), [](const Double2d & a, const Double2d & b)
   {

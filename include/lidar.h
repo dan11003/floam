@@ -60,6 +60,8 @@ typedef pcl::PointCloud<vel_point::PointXYZIRTC> VelCurve;
 
 typedef pcl::PointCloud<pcl::PointXYZINormal> NormalCloud;
 
+typedef pcl::PointCloud<pcl::PointXYZI> IntensityCloud;
+
 void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
 
 struct lessThanKey

@@ -23,6 +23,7 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>eigen_conversions</build_depend>
+  <build_depend>lio_sam</build_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>nav_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
@@ -32,6 +33,7 @@
   <run_depend>rosbag</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>eigen_conversions</run_depend>
+  <run_depend>lio_sam</run_depend>
 
   <export>
   </export>

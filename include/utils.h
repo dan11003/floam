@@ -12,9 +12,11 @@
 #include <ros/time.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/transforms.h>
-
 #include <boost/filesystem.hpp>
 #include "lidar.h"
+#include "sensor_msgs/Imu.h"
+
+
 using boost::format;
 using boost::io::group;
 
@@ -40,6 +42,8 @@ void SaveOdom(
     const std::vector<Eigen::Affine3d>& poses,
     const std::vector<double>& keyframe_stamps,
     const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr>& clouds);
+
+sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in, const Eigen::Quaterniond& extQRPY);
 
 
 

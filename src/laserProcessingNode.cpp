@@ -27,6 +27,7 @@
 #include "lidar.h"
 #include "laserProcessingClass.h"
 #include "dataHandler.h"
+#include "utils.h"
 
 
 LaserProcessingClass laserProcessing;
@@ -41,6 +42,7 @@ lidar::Lidar lidar_param;
 ros::Publisher pubEdgePoints;
 ros::Publisher pubSurfPoints;
 ros::Publisher pubLaserCloudFiltered;
+ros::Publisher imuSynced;
 Eigen::Quaterniond exstrinsics;
 
 void velodyneHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
@@ -110,8 +112,12 @@ void laser_processing(){
         std::cerr << "cannot compensate - no IMU data" << std::endl;
         continue;
       }
-      Eigen::Quaterniond q(dmapping::Imu2Orientation(imuHandler.Get(pointcloud_time.toSec()))*exstrinsics);
-      Eigen::Affine3d ImuNowT(q);
+      sensor_msgs::Imu rosImuNow = imuHandler.Get(pointcloud_time.toSec());
+      rosImuNow = imuConverter(rosImuNow, exstrinsics);
+
+      Eigen::Quaterniond q(dmapping::Imu2Orientation(rosImuNow));
+      //Eigen::Affine3d ImuNowT(q);
+      Eigen::Affine3d ImuNowT(Eigen::Affine3d::Identity());
 
       //pcl::transformPointCloud(*compensated, *imu_aligned, ImuNowT);
       const ros::Time t = ros::Time::now();
@@ -149,6 +155,13 @@ void laser_processing(){
       PublishCloud("/laser_cloud_surf", *pointcloud_surf, "base_link", pointcloud_time);
       PublishCloud("/laser_cloud_edge", *pointcloud_edge, "base_link", pointcloud_time);
       PublishCloud("/laser_cloud_less_edge", *pointcloud_less_edge, "base_link", pointcloud_time);
+      rosImuNow.header.frame_id = "imu_corrected";
+      imuSynced.publish(rosImuNow);
+      /*sensor_msgs::PointCloud2 surfPointsMsg;
+      pcl::toROSMsg(*pointcloud_surf, surfPointsMsg);
+      surfPointsMsg.header.stamp = pointcloud_time;
+      surfPointsMsg.header.frame_id = "base_link";
+      pubSurfPoints.publish(surfPointsMsg);*/
 
     }
     //sleep 2 ms every time
@@ -193,6 +206,7 @@ int main(int argc, char **argv)
 
   std::cout << "subscribe to IMU data - topic: " << std::quoted(imu_topic) << std::endl;
   ros::Subscriber subIMU = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100000, imuSubscriber);
+  imuSynced = nh.advertise<sensor_msgs::Imu>("/synced/imu/data", 100);
 
   /*pubLaserCloudFiltered = nh.advertise<pcl::PointCloud<vel_point::PointXYZIRT>>("/velodyne_points_filtered", 100);
 

@@ -75,21 +75,10 @@ void LaserProcessingClass::RingExtraction(const pcl::PointCloud<vel_point::Point
   }
 }
 
-void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge){
+void LaserProcessingClass::FloamFeatures(std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge){
 
-  std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(*pc_in, indices);
-  VelCurve curved;
-
-
-  int N_SCANS = lidar_param.num_lines;
-  std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans;
-  std::vector<std::vector<double> > range_image;
-  RingExtractionVelodyne(pc_in, laserCloudScans, range_image);
   VelCurve feature_cloud;
-
-
-
+  const int N_SCANS = lidar_param.num_lines;
   for(int i = 0; i < N_SCANS; i++){
     if(laserCloudScans[i]->points.size()<131){
       continue;
@@ -116,13 +105,22 @@ void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::Po
         sector_end = total_points - 1;
       }
       std::vector<Double2d> subCloudCurvature(cloudCurvature.begin()+sector_start,cloudCurvature.begin()+sector_end);
-
       featureExtractionFromSector(laserCloudScans[i],subCloudCurvature, pc_out_edge, pc_out_surf, pc_out_less_flat, pc_out_less_edge);
-
     }
 
   }// Per ring
   PublishCloud("feature_extract", feature_cloud, "base_link", ros::Time::now());
+}
+void LaserProcessingClass::featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge){
+
+  cout << pc_in->size() << endl;
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud(*pc_in, indices);
+
+  std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans;
+  std::vector<std::vector<double> > range_image;
+  RingExtractionVelodyne(pc_in, laserCloudScans, range_image);
+  FloamFeatures(laserCloudScans, pc_out_edge, pc_out_surf, pc_out_less_flat, pc_out_less_edge);
 }
 
 

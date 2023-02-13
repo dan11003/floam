@@ -152,7 +152,7 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
       largestPickedNum++;
       picked_points.push_back(ind);
 
-      if (largestPickedNum <= 20){
+      if (curv > 50 && largestPickedNum <= 20){
         pc_out_edge->push_back(ToCurvature(pc_in->points[ind], curv));
         //pc_out_edge->push_back(pc_in->points[ind]);
         point_info_count++;
@@ -182,61 +182,18 @@ void LaserProcessingClass::featureExtractionFromSector(const pcl::PointCloud<vel
     }
   }
 
-  //find flat points
-  // point_info_count =0;
-  // int smallestPickedNum = 0;
-
-  // for (int i = 0; i <= (int)cloudCurvature.size()-1; i++)
-  // {
-  //     int ind = cloudCurvature[i].id;
-
-  //     if( std::find(picked_points.begin(), picked_points.end(), ind)==picked_points.end()){
-  //         if(cloudCurvature[i].value > 0.1){
-  //             //ROS_WARN("extracted feature not qualified, please check lidar");
-  //             break;
-  //         }
-  //         smallestPickedNum++;
-  //         picked_points.push_back(ind);
-
-  //         if(smallestPickedNum <= 4){
-  //             //find all points
-  //             pc_surf_flat->push_back(pc_in->points[ind]);
-  //             pc_surf_lessFlat->push_back(pc_in->points[ind]);
-  //             point_info_count++;
-  //         }
-  //         else{cloudCurvature
-  //             break;
-  //         }
-
-  //         for(int k=1;k<=5;k++){
-  //             double diffX = pc_in->points[ind + k].x - pc_in->points[ind + k - 1].x;
-  //             double diffY = pc_in->points[ind + k].y - pc_in->points[ind + k - 1].y;
-  //             double diffZ = pc_in->points[ind + k].z - pc_in->points[ind + k - 1].z;
-  //             if (diffX * diffX + diffY * diffY + diffZ * diffZ > 0.05){
-  //                 break;
-  //             }
-  //             picked_points.push_back(ind+k);
-  //         }
-  //         for(int k=-1;k>=-5;k--){
-  //             double diffX = pc_in->points[ind + k].x - pc_in->points[ind + k + 1].x;
-  //             double diffY = pc_in->points[ind + k].y - pc_in->points[ind + k + 1].y;
-  //             double diffZ = pc_in->points[ind + k].z - pc_in->points[ind + k + 1].z;
-  //             if (diffX * diffX + diffY * diffY + diffZ * diffZ > 0.05){
-  //                 break;
-  //             }
-  //             picked_points.push_back(ind+k);
-  //         }
-
-  //     }
-  // }
-
+  // split remaining points
   for (int i = 0; i <= (int)cloudCurvature.size()-1; i++)
   {
     const int ind = cloudCurvature[i].id;
     const float curv = cloudCurvature[i].value;
     if( std::find(picked_points.begin(), picked_points.end(), ind)==picked_points.end())
     {
-      pc_out_surf->push_back(ToCurvature(pc_in->points[ind], curv));
+      if(curv < 50 ){
+        pc_out_surf->push_back(ToCurvature(pc_in->points[ind], curv));
+      }else{
+        pc_out_less_edge->push_back(ToCurvature(pc_in->points[ind], curv));
+      }
     }
   }
 

@@ -115,16 +115,17 @@ void laser_processing(){
 
       //pcl::transformPointCloud(*compensated, *imu_aligned, ImuNowT);
       const ros::Time t = ros::Time::now();
-      PublishCloud("process1_uncompensated", *pointcloud_in, "base_link", t);
-      PublishCloud("process2_compensated", *compensated, "base_link", t);
-      PublishCloud("process3_prediction", *imu_aligned, "base_link", t);
+      PublishCloud("/process1_uncompensated", *pointcloud_in, "base_link", t);
+      PublishCloud("/process2_compensated", *compensated, "base_link", t);
+      PublishCloud("/process3_prediction", *imu_aligned, "base_link", t);
       pointcloud_in = compensated;
 
 
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_surf(new pcl::PointCloud<vel_point::PointXYZIRTC>());
-      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_less_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_less_flat(new pcl::PointCloud<vel_point::PointXYZIRTC>());
+      pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_less_edge(new pcl::PointCloud<vel_point::PointXYZIRTC>());
+
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
@@ -142,26 +143,12 @@ void laser_processing(){
       pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr pointcloud_filtered(new pcl::PointCloud<vel_point::PointXYZIRTC>());
       *pointcloud_filtered+=*pointcloud_edge;
       *pointcloud_filtered+=*pointcloud_surf;
-      /*pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);
-      laserCloudFilteredMsg.header.stamp = pointcloud_time;
-      laserCloudFilteredMsg.header.frame_id = "base_link";
-      pubLaserCloudFiltered.publish(laserCloudFilteredMsg);*/
+      *pointcloud_filtered+=*pointcloud_less_edge;
+
       PublishCloud("/velodyne_points_filtered", *pointcloud_filtered, "base_link", pointcloud_time);
-
-      PublishCloud("/laser_cloud_edge", *pointcloud_edge, "base_link", pointcloud_time);
-      /*sensor_msgs::PointCloud2 edgePointsMsg;
-      pcl::toROSMsg(*pointcloud_edge, edgePointsMsg);
-      edgePointsMsg.header.stamp = pointcloud_time;
-      edgePointsMsg.header.frame_id = "base_link";
-      pubEdgePoints.publish(edgePointsMsg);*/
-
-
       PublishCloud("/laser_cloud_surf", *pointcloud_surf, "base_link", pointcloud_time);
-      /*sensor_msgs::PointCloud2 surfPointsMsg;
-      pcl::toROSMsg(*pointcloud_surf, surfPointsMsg);
-      surfPointsMsg.header.stamp = pointcloud_time;
-      surfPointsMsg.header.frame_id = "base_link";
-      pubSurfPoints.publish(surfPointsMsg);*/
+      PublishCloud("/laser_cloud_edge", *pointcloud_edge, "base_link", pointcloud_time);
+      PublishCloud("/laser_cloud_less_edge", *pointcloud_less_edge, "base_link", pointcloud_time);
 
     }
     //sleep 2 ms every time

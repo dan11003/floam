@@ -5,15 +5,17 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /links1/TF1
+        - /links1
         - /links1/TF1/Frames1
+        - /Odometry1
         - /Odometry1/Odom lidar1/Shape1
-        - /Odometry1/Odometry1/Shape1
-        - /Mapping1
+        - /Odometry1/Map (cloud)2
+        - /Feature Cloud1
+        - /Feature Cloud1/Plannar Feature2
         - /gps_debug1/Odometry2/Shape1
         - /gps_debug1/Odometry3/Shape1
         - /gps_debug1/Odometry4/Shape1
-      Splitter Ratio: 0.47835737466812134
+      Splitter Ratio: 0.4853801131248474
     Tree Height: 674
   - Class: rviz/Selection
     Name: Selection
@@ -43,9 +45,9 @@ Visualization Manager:
             base_link:
               Value: true
             base_link_now:
-              Value: true
+              Value: false
             base_link_scliosam:
-              Value: true
+              Value: false
             chassis_link:
               Value: false
             gps:
@@ -53,7 +55,7 @@ Visualization Manager:
             imu_corrected:
               Value: false
             odom:
-              Value: true
+              Value: false
             velodyne:
               Value: false
           Marker Alpha: 1
@@ -78,24 +80,6 @@ Visualization Manager:
                 {}
           Update Interval: 0
           Value: true
-        - Alpha: 1
-          Class: rviz/Axes
-          Enabled: false
-          Length: 2
-          Name: map
-          Radius: 0.5
-          Reference Frame: map
-          Show Trail: false
-          Value: false
-        - Alpha: 1
-          Class: rviz/Axes
-          Enabled: false
-          Length: 1
-          Name: base_link
-          Radius: 0.30000001192092896
-          Reference Frame: base_link
-          Show Trail: false
-          Value: false
       Enabled: true
       Name: links
     - Class: rviz/Group
@@ -135,43 +119,8 @@ Visualization Manager:
           Topic: /lio_sam/mapping/odometry
           Unreliable: false
           Value: true
-        - Angle Tolerance: 0.10000000149011612
-          Class: rviz/Odometry
-          Covariance:
-            Orientation:
-              Alpha: 0.5
-              Color: 255; 255; 127
-              Color Style: Unique
-              Frame: Local
-              Offset: 1
-              Scale: 1
-              Value: true
-            Position:
-              Alpha: 0.30000001192092896
-              Color: 204; 51; 204
-              Scale: 1
-              Value: true
-            Value: true
-          Enabled: true
-          Keep: 100000
-          Name: Odometry
-          Position Tolerance: 0.10000000149011612
-          Queue Size: 10
-          Shape:
-            Alpha: 1
-            Axes Length: 1
-            Axes Radius: 0.10000000149011612
-            Color: 255; 25; 0
-            Head Length: 0.20000000298023224
-            Head Radius: 0.20000000298023224
-            Shaft Length: 0.10000000149011612
-            Shaft Radius: 0.10000000149011612
-            Value: Arrow
-          Topic: /lio_sam/mapping/odometry
-          Unreliable: false
-          Value: true
-        - Alpha: 0.05000000074505806
-          Autocompute Intensity Bounds: true
+        - Alpha: 0.10000000149011612
+          Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
             Max Value: 7.4858574867248535
             Min Value: -1.2309398651123047
@@ -185,7 +134,9 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
+          Max Intensity: 217
           Min Color: 0; 0; 0
+          Min Intensity: 0
           Name: Map (cloud)
           Position Transformer: XYZ
           Queue Size: 10
@@ -198,6 +149,34 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
+        - Alpha: 0.10000000149011612
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 7.4858574867248535
+            Min Value: -1.2309398651123047
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: Intensity
+          Decay Time: 300
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Map (cloud)
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: false
+          Size (Pixels): 2
+          Size (m): 0.009999999776482582
+          Style: Points
+          Topic: /scan_registered
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
       Enabled: true
       Name: Odometry
     - Class: rviz/Group
@@ -285,7 +264,35 @@ Visualization Manager:
           Size (Pixels): 5
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /lio_sam/feature/cloud_corner
+          Topic: /laser_cloud_edge
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 239; 41; 41
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Plannar Feature
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.009999999776482582
+          Style: Points
+          Topic: /laser_cloud_surf
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -313,12 +320,12 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /lio_sam/feature/cloud_surface
+          Topic: /laser_cloud_less_edge
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Feature Cloud
     - Class: rviz/Group
       Displays:
@@ -353,8 +360,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 11.803640365600586
-            Min Value: -3.0430960655212402
+            Max Value: 3.433917999267578
+            Min Value: -0.993553876876831
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -492,7 +499,7 @@ Visualization Manager:
             {}
           Queue Size: 100
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Mapping
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -749,7 +756,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 64.73284912109375
+      Distance: 12.749223709106445
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -757,17 +764,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 15.280571937561035
-        Y: -11.552949905395508
-        Z: 9.128963470458984
+        X: 0.950518012046814
+        Y: 2.1955995559692383
+        Z: -0.4476105272769928
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1147987842559814
-      Target Frame: base_link
-      Yaw: 5.528600692749023
+      Pitch: 0.8097966909408569
+      Target Frame: <Fixed Frame>
+      Yaw: 4.183584690093994
     Saved: ~
 Window Geometry:
   Displays:

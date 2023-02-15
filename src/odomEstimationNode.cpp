@@ -47,11 +47,11 @@ typedef struct
 {
  sensor_msgs::PointCloud2ConstPtr pointCloudEdge;
  sensor_msgs::PointCloud2ConstPtr pointCloudSurf;
+ sensor_msgs::PointCloud2ConstPtr pointCloudLessEdge;
  sensor_msgs::ImuConstPtr imu;
 }ProcessedData;
 std::queue<ProcessedData> ProcessedDataBuf;
-/*std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
-std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;*/
+
 ros::Publisher pubLaserCloudInfo;
 lidar::Lidar lidar_param;
 Dump dataStorage;
@@ -62,12 +62,14 @@ std::string odom_link = "odom";
 
 ros::Publisher pubLaserOdometry;
 ros::Publisher pubLaserOdometryNow;
+Eigen::Isometry3d poseEstimate;
 
 void TrippleCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgEdge,
                      const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgSurf,
+                     const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgLessEdge,
                      const sensor_msgs::ImuConstPtr& imuMsg)
 {
-  ProcessedDataBuf.push(ProcessedData{laserCloudMsgEdge, laserCloudMsgSurf, imuMsg});
+  ProcessedDataBuf.push(ProcessedData{laserCloudMsgEdge, laserCloudMsgSurf, laserCloudMsgLessEdge, imuMsg});
 }
 
 
@@ -211,7 +213,7 @@ void odom_estimation(){
 
             *merged_raw += *pointcloud_edge_in;
             *merged_raw += *pointcloud_surf_in;
-            /*
+
             SurfelExtraction surfEl(pointcloud_surf_in, lidar_param);
 
 
@@ -224,7 +226,7 @@ void odom_estimation(){
 
 
             std::cout << "surf extract finished" << std::endl;
-            /*std::uint16_t max_r = 0, min_r = 20;
+            std::uint16_t max_r = 0, min_r = 20;
             for(auto && pnt : pointcloud_surf_in->points){
               max_r = std::max(max_r,pnt.ring);
               min_r = std::min(min_r,pnt.ring);
@@ -232,37 +234,28 @@ void odom_estimation(){
             //std::cout << "max_r: " << max_r << ", min_r: " << min_r << std::endl;
 
             PublishCloud("normals",*surfInNormals,"sensor", ros::Time::now());
-            pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);*/
+            pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);
 
 
 
             //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
-            if(is_odom_inited == false){
-                pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(pointcloud_edge_in);
-                pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(pointcloud_surf_in);
-                odomEstimation.initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in, qCurrent);
-                is_odom_inited = true;
-                ROS_INFO("\"FLOAM\"  - odom inited");
-            }else{
-                std::chrono::time_point<std::chrono::system_clock> start, end;
-                start = std::chrono::system_clock::now();
-                odomEstimation.UpdatePointsToMapSelector(pointcloud_edge_in, pointcloud_surf_in, deskew, qCurrent);
-                end = std::chrono::system_clock::now();
-                std::chrono::duration<float> elapsed_seconds = end - start;
-                total_frame++;
-                float time_temp = elapsed_seconds.count() * 1000;
-                total_time+=time_temp;
-                ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, odomEstimation.GetVelocity().norm());
+            const ros::Time t0 = ros::Time::now();
 
-            }
+
+            odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, qCurrent, poseEstimate);
+            double velocity = odomEstimation.GetVelocity().norm();
+            total_frame++;
+            const float time_temp = (ros::Time::now()-t0).toSec();
+            total_time+=time_temp;
+            ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, velocity);
             *merged += *pointcloud_surf_in;
             *merged += *pointcloud_edge_in;
 
 
 
-            Eigen::Quaterniond q_current(odomEstimation.odom.rotation());
+            Eigen::Quaterniond q_current(poseEstimate.rotation());
             //q_current.normalize();
-            Eigen::Vector3d t_current = odomEstimation.odom.translation();
+            Eigen::Vector3d t_current = poseEstimate.translation();
 
             const ros::Time tNow = ros::Time::now();
             static tf::TransformBroadcaster br;
@@ -391,17 +384,16 @@ int main(int argc, char **argv)
     lidar_param.setMinDistance(min_dis);
 
     odomEstimation.init(lidar_param, map_resolution, loss_function);
-    //ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100, velodyneEdgeHandler);
-    //ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
-    //void callback(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgEdge, const sensor_msgs::PointCloud2ConstPtr &laserCloudMsgSurf, sensor_msgs::ImuConstPtr& imuMsg)
-    message_filters::Subscriber<PointCloud2> sub1(nh, "/laser_cloud_edge", 1);
-     message_filters::Subscriber<PointCloud2> sub2(nh, "/laser_cloud_surf", 1);
-     message_filters::Subscriber<Imu> sub3(nh, "/synced/imu/data", 1);
 
-     typedef sync_policies::ApproximateTime<PointCloud2, PointCloud2,Imu> MySyncPolicy;
+    message_filters::Subscriber<PointCloud2> sub_edge(nh, "/laser_cloud_edge", 1);
+    message_filters::Subscriber<PointCloud2> sub2_surf(nh, "/laser_cloud_surf", 1);
+    message_filters::Subscriber<PointCloud2> sub3_less_edge(nh, "/laser_cloud_less_edge", 1);
+    message_filters::Subscriber<Imu> sub_imu(nh, "/synced/imu/data", 1);
+
+    typedef sync_policies::ApproximateTime<PointCloud2, PointCloud2, PointCloud2, Imu> MySyncPolicy;
      // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
-     Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub1, sub2, sub3);
-     sync.registerCallback(boost::bind(&TrippleCallback, _1, _2, _3));
+    Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub_edge, sub2_surf, sub3_less_edge, sub_imu);
+    sync.registerCallback(boost::bind(&TrippleCallback, _1, _2, _3, _4));
 
     pubLaserOdometryNow = nh.advertise<nav_msgs::Odometry>("/odom_now", 100);
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);

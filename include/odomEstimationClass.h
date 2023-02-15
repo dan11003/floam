@@ -120,6 +120,12 @@ class OdomEstimationClass
 
     void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 
+    void ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
+
+    Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
+
+private:
+
     void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
 
     void UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu);
@@ -134,9 +140,7 @@ class OdomEstimationClass
 
     void updatePointsToMap(const IntensityCloud::Ptr& edge_in, const IntensityCloud::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type);
 
-    void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);
-
-    Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
+    void getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap);    
 
     bool KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud, const Eigen::Isometry3d& pose); // determines if the current pose is a new keyframe
 
@@ -178,6 +182,7 @@ private:
     const double keyframe_min_rot_ = 2*M_PI/180.0;    //or 5 deg
     size_t keyframe_history_ = 3;
     keyframes keyframes_;
+    bool odom_initiated_ = false;
 
 
     //function

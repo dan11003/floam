@@ -67,11 +67,6 @@ void SurfelExtraction::LineNNSearch( const int ring, const double query, int &ro
   std::vector<int> indicies = NNSearch.findClosestElements(times_[ring], 5, hor_time_res, query);
   //cout << "nearby: " << indicies.size() << endl;
   if(indicies.size() > 0){
-    //const int first_row = neighbours.rows();
-    //cout << "first:" << first_row << endl;
-    //neighbours.resize(first_row + indicies.size(), 3);
-    //cout << "resized:" << endl;
-    //neighbours = Eigen::MatrixXd(indicies.size(),3);
     for(int first_row = row; row< first_row + indicies.size() ; row++){ // i is row in matrix
       //cout << i - first_row << endl;
       const int idx = indicies[row - first_row]; // zero index
@@ -224,6 +219,18 @@ void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelC
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
   }
 }
+void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
+
+  if(odom_initiated_ == false){
+      pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
+      pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_surf_in = VelToIntensityCopy(surf_in);
+      initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in, qImu);
+      odom_initiated_ = true;
+  }else{
+      UpdatePointsToMapSelector(edge_in, surf_in, true, qImu);
+  }
+  odom_out = odom;
+}
 
 void OdomEstimationClass::updatePointsToMap(const VelCurve::Ptr& edge_in, const VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
   IntensityCloud::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
@@ -272,12 +279,10 @@ void OdomEstimationClass::updatePointsToMap(const IntensityCloud::Ptr& edge_in, 
 
       ceres::LossFunction *loss_function = nullptr;
       if(loss_function_ == "huber"){
-        //  std::cout << "huber" << std::endl;
         loss_function = new ceres::HuberLoss(0.1);
       }
       else{
-        //std::cout << "Cauchy" << std::endl;
-        new ceres::CauchyLoss(0.2); // why 0.2? https://arxiv.org/pdf/2211.02445.pdf Fig.12 //daniel
+        loss_function = new ceres::CauchyLoss(0.2); // why 0.2? https://arxiv.org/pdf/2211.02445.pdf Fig.12 //daniel
       }
       ceres::Problem::Options problem_options;
       ceres::Problem problem(problem_options);

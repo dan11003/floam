@@ -215,4 +215,11 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
   return indicies;
 }
 
+Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez) {
+  return Eigen::Translation<double, 3>(x, y, z) *
+      Eigen::AngleAxis<double>(ex, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxis<double>(ey, Eigen::Vector3d::UnitY()) *
+      Eigen::AngleAxis<double>(ez, Eigen::Vector3d::UnitZ());
+}
+
 

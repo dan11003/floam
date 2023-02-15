@@ -1,8 +1,8 @@
 // Author of FLOAM: Wang Han 
 // Email wh200720041@gmail.com
 // Homepage https://wanghan.pro
-#ifndef _ODOM_ESTIMATION_CLASS_H_
-#define _ODOM_ESTIMATION_CLASS_H_
+#ifndef _ODOM_ESTIMATIONDMAPPING_CLASS_H_
+#define _ODOM_ESTIMATIONDMAPPING_CLASS_H_
 
 //std lib
 #include <string>
@@ -38,80 +38,9 @@
 #include "utils.h"
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/random_sample.h>
+#include "odomEstimationClass.h"
 using std::cout;
 using std::endl;
-pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);
-
-typedef struct
-{
-    float l3; // largest eigen value;
-    float planarity;
-    int nSamples;
-    //Eigen::Matrix3d cov;
-    Eigen::Vector3d normal;
-    //Eigen::Vector3d mean;
-    Eigen::Vector3d centerPoint;
-    float entropy;
-    float intensity;
-    float time;
-    float curvature;
-
-}SurfelPointInfo;
-
-class SurfElCloud
-{
-public:
-  SurfElCloud() {}
-
-  pcl::PointCloud<pcl::PointXYZINormal>::Ptr GetPointCloud();
-
-  auto begin(){return cloud.begin();}
-
-  auto end(){return cloud.end();}
-
-  SurfElCloud Transform(const Eigen::Isometry3d& transform);
-
-  std::vector<SurfelPointInfo> cloud;
-
-private:
-
-};
-
-
-class SurfelExtraction
-{
-
-public:
-  SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par);
-
-  void Extract(SurfElCloud& surfelCloud);
-
-private:
-
-  void LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours);
-
-  bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
-
-  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfEl);
-
-  void Initialize();
-
-  lidar::Lidar lidar_par_;
-  VelCurve::Ptr surf_in_;
-  std::vector<VelCurve::Ptr> ringClouds_; //sorted in time, and segmented per ring
-  std::vector<std::vector<double> > times_;
-
-  pcl::PointXYZINormal defaultNormal;
-
-};
-
-
-
-
-
-
-
-
 
 typedef struct
 {
@@ -122,13 +51,13 @@ typedef struct
 
 typedef std::vector<keyframe> keyframes;
 
-class OdomEstimationClass 
+class OdomEstimationDmapping
 {
     public:
 
     typedef enum{VANILLA, INITIAL_ITERATION, REFINEMENT_AND_UPDATE} UpdateType;
 
-    OdomEstimationClass();
+    OdomEstimationDmapping();
 
     void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 
@@ -138,7 +67,7 @@ class OdomEstimationClass
 
 private:
 
-    void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
+    void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZINormal>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
 
     void UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu);
 

@@ -2,211 +2,48 @@
 // Email wh200720041@gmail.com
 // Homepage https://wanghan.pro
 
-#include "odomEstimationClass.h"
-
-NormalCloud::Ptr SurfElCloud::GetPointCloud(){
-  NormalCloud::Ptr output(new NormalCloud());
-  for(auto && surfEl : cloud){
-    pcl::PointXYZINormal pnt;
-    pnt.x = surfEl.centerPoint(0); pnt.y = surfEl.centerPoint(1); pnt.z = surfEl.centerPoint(2);
-    pnt.normal_x = surfEl.normal(0); pnt.normal_y = surfEl.normal(1);  pnt.normal_z = surfEl.normal(2);
-    pnt.intensity = surfEl.intensity;
-    output->push_back(std::move(pnt));
-  }
-  return output;
-}
-
-SurfElCloud SurfElCloud::Transform(const Eigen::Isometry3d& transform){
-  SurfElCloud SurfElTransformed = *this;
-  for(auto itr = SurfElTransformed.begin(); itr != SurfElTransformed.end(); itr++){
-    itr->centerPoint = transform*itr->centerPoint;
-    itr->normal = transform.linear()*itr->normal;
-  }
-  return SurfElTransformed;
-}
-SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
-  surf_in_ = surf_in;
-  Initialize();
-}
-
-void SurfelExtraction::Initialize(){
-
-  ringClouds_.resize(lidar_par_.num_lines);
-  times_.resize(lidar_par_.num_lines);
-  for(int i = 0 ; i < ringClouds_.size() ; i++){ // initiaize clouds
-    ringClouds_[i] = VelCurve::Ptr(new VelCurve());
-  }
-  for(auto&& pnt : surf_in_->points){ // Fill up
-    ringClouds_[pnt.ring]->push_back(pnt);
-  }
-  for(auto && cloud : ringClouds_){ // Sort
-    SortTime(cloud);
-  }
-  for(auto&& cloud : ringClouds_){ // And create the same structure for doubles
-    for(auto && pnt : cloud->points){
-      times_[pnt.ring].push_back(pnt.time); // Please preallocate next time daniel!!!!
-    }
-  }
-
-}
-void SurfelExtraction::Extract(SurfElCloud& surfelCloud){
-
- for(auto && pnt : surf_in_->points){
-    SurfelPointInfo pntSurfEl;
-    if(EstimateNormal(pnt, pntSurfEl)){
-      surfelCloud.cloud.push_back(std::move(pntSurfEl));
-    }
-  }
-}
-void SurfelExtraction::LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours){
-
-  NNSearchArray NNSearch;
-  const int scans_par_line = 1800;
-  float hor_time_res = 6*lidar_par_.scan_period/scans_par_line; // max 6 points from center
-  //cout << "max tdiff - not implemented yet: " << scans_par_line << std::endl;
-  std::vector<int> indicies = NNSearch.findClosestElements(times_[ring], 5, hor_time_res, query);
-  //cout << "nearby: " << indicies.size() << endl;
-  if(indicies.size() > 0){
-    for(int first_row = row; row< first_row + indicies.size() ; row++){ // i is row in matrix
-      //cout << i - first_row << endl;
-      const int idx = indicies[row - first_row]; // zero index
-      //cout << "idx" << idx << endl;
-      const Eigen::Vector3d  pntNear(ringClouds_[ring]->points[idx].x, ringClouds_[ring]->points[idx].y, ringClouds_[ring]->points[idx].z);
-      neighbours.block<1,3>(row,0) = pntNear;
-      //cout << "neigbour " << neighbours.block<1,3>(i,0).transpose() << endl;
-    }
-  }
-}
-bool SurfelExtraction::GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours){
-  const int ring = pnt.ring;
-  const double time = pnt.time;
-  std::vector<int> search;
-  // not last ring
-  neighbours = Eigen::MatrixXd(15,3);
-  int first = 0;
-
-  ///cout << "ring: "<< ring << endl;
-  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
-  LineNNSearch(ring, time,first, neighbours);
-  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
-  if(ring < lidar_par_.num_lines - 1){
-    LineNNSearch(ring+1, time, first, neighbours);
-  }
-  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
-  // not first ring
-  if(ring > 0 ){
-    LineNNSearch(ring-1, time, first, neighbours);
-  }
-  neighbours.conservativeResize(first,3);
-  //cout << "dim: " << neighbours.rows() << " x " << neighbours.cols() << endl;
-
-  return true;
+#include "odomestimationDmapping.h"
 
 
-}
-bool SurfelExtraction::EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfel){
-
-  //cout << "EstimateNormal" << endl;
-  Eigen::MatrixXd X; //neighbours
-  const bool statusOK = GetNeighbours(pnt, X); // 3 x Nsamples
-  if(!statusOK){
-    return false;
-  }
-  /*pcl::PointCloud<pcl::PointXYZ> cloud, cloud_pnt;
-
-  for(int i = 0 ; i <X.rows() ; i++){
-    pcl::PointXYZ p(X(i,0), X(i,1), X(i,2));
-    cloud.push_back(p);
-  }
-  cout << X << endl;
-  cout <<"rows: " <<  X.rows() << endl;
-  pcl::PointXYZ pnt_xyz(pnt.x, pnt.y, pnt.z);
-  cloud_pnt.push_back(pnt_xyz);
-  PublishCloud("surf", *surf_in_, "base_link", ros::Time::now() );
-  PublishCloud("center", cloud_pnt, "base_link", ros::Time::now() );
-  PublishCloud("neighbours", cloud, "base_link", ros::Time::now() );
-  */
-
-  //PublishCloud(const std::string& topic, Cloud& cloud, const std::string& frame_id, const ros::Time& t);
-  const int Nsamples = X.rows();
-  Eigen::Matrix<double,1,3> mean(0,0,0);  // 3 x 1
-
-  for(Eigen::Index i=0 ; i<Nsamples ; i++)
-    mean += X.block<1,3>(i,0); // compute sum
-  mean/=Nsamples;
-
-  for(Eigen::Index i=0 ; i<Nsamples ; i++) // subtract mean
-    X.block<1,3>(i,0) = X.block<1,3>(i,0) - mean;
-
-  const Eigen::Matrix3d cov = 1.0/(Nsamples - 1.0)*X.transpose()*X;
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(cov);
-
-
-  const float l1 = std::sqrt(es.eigenvalues()[0]);  // l1 < l2 < l3
-  const float l2 = std::sqrt(es.eigenvalues()[1]);
-  const float l3 = std::sqrt(es.eigenvalues()[2]);
-  const float planarity = 1 - (l1 + l2)/ (l1 + l2 + l3); // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
-
-  Eigen::Vector3d normal = es.eigenvectors().col(0);
-
-  Eigen::Matrix <double, 3, 1> vp (pnt.x, pnt.y, pnt.z);
-  if(vp.dot(normal)> 0) // when looking at point from origin, the normal should not look back at you
-    normal *=-1;
-
-  surfel.centerPoint = Eigen::Vector3d(pnt.x, pnt.y, pnt.z);
-  //surfel.mean = mean;
-  surfel.l3 = l3;
-  //surfel.cov = cov;
-  surfel.nSamples = Nsamples;
-  surfel.planarity = planarity; // this should be it when l1 -> 0  & l2/l3 is high  planarity -> 1 if l3 >> l1+l2
-  surfel.normal = normal;
-  surfel.entropy = 0.5*log(1 + 2*M_PI*M_E*cov.determinant());
-  surfel.intensity = pnt.intensity;
-  surfel.time = pnt.time;
-  surfel.curvature = pnt.curvature;
-  //surfel.intensity = planarity;
-  return true;
-}
-
-
-
-
-
-
-
-void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function){
+void OdomEstimationDmapping::init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function){
   //init local map
   laserCloudCornerMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
   laserCloudSurfMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
 
   //downsampling size
-  downSizeFilterEdge.setLeafSize(map_resolution, map_resolution, map_resolution);
+  //downSizeFilterEdge.setLeafSize(map_resolution, map_resolution, map_resolution);
   downSizeFilterSurf.setLeafSize(map_resolution * 2, map_resolution * 2, map_resolution * 2);
 
   //kd-tree
-  kdtreeEdgeMap = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
+  //kdtreeEdgeMap = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
   kdtreeSurfMap = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
 
+  optimization_count = 2;
   odom = Eigen::Isometry3d::Identity();
   last_odom = Eigen::Isometry3d::Identity();
-  optimization_count=2;
   loss_function_ = boost::algorithm::to_lower_copy(loss_function);
-  std::cout << "Use loss function: " << loss_function_ << std::endl;
+
   lidar_param_ = lidar_param;
 }
 
-void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu){
+void OdomEstimationDmapping::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZINormal>::Ptr& surf_in, const Eigen::Quaterniond& qImu){
   odom = Eigen::Isometry3d(qImu);
   imu_prev = qImu;
-  pcl::transformPointCloud(*edge_in, *laserCloudCornerMap, Eigen::Vector3d(0,0,0), qImu);
-  pcl::transformPointCloud(*surf_in, *laserCloudSurfMap,   Eigen::Vector3d(0,0,0), qImu);
+  //pcl::transformPointCloud(*edge_in, *laserCloudCornerMap, Eigen::Vector3d(0,0,0), qImu);
+  /*
+  pcl::transformPointCloud (*surf_in, *laserCloudSurfMap,   Eigen::Vector3d(0,0,0), qImu);
+  transformPointCloudWithNormals (const pcl::PointCloud<PointT> &cloud_in,
+                                  pcl::PointCloud<PointT> &cloud_out,
+                                  const Eigen::Vector3f &offset,
+                                  const Eigen::Quaternionf &rotation,
+                                  bool copy_all_fields = true)
   /**laserCloudCornerMap += *edge_in;
   *laserCloudSurfMap += *surf_in;*/
   optimization_count=12;
 }
 
 
-void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu){
+void OdomEstimationDmapping::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu){
   ros::Time t0 = ros::Time::now();
   if(!deskew){
     updatePointsToMap(edge_in, surf_in, qImu, UpdateType::VANILLA);
@@ -223,7 +60,7 @@ void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelC
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
   }
 }
-void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
+void OdomEstimationDmapping::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
 
   if(odom_initiated_ == false){
       pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
@@ -236,12 +73,12 @@ void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& su
   odom_out = odom;
 }
 
-void OdomEstimationClass::updatePointsToMap(const VelCurve::Ptr& edge_in, const VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
+void OdomEstimationDmapping::updatePointsToMap(const VelCurve::Ptr& edge_in, const VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
   IntensityCloud::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
   IntensityCloud::Ptr surf_in_XYZI = VelToIntensityCopy(surf_in);
   updatePointsToMap(edge_in_XYZI, surf_in_XYZI, qImu, update_type);
 }
-void OdomEstimationClass::updatePointsToMap(const IntensityCloud::Ptr& edge_in, const IntensityCloud::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
+void OdomEstimationDmapping::updatePointsToMap(const IntensityCloud::Ptr& edge_in, const IntensityCloud::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
 
   if(optimization_count>2)
     optimization_count--;
@@ -322,7 +159,7 @@ void OdomEstimationClass::updatePointsToMap(const IntensityCloud::Ptr& edge_in, 
 
 }
 
-void OdomEstimationClass::pointAssociateToMap(pcl::PointXYZI const *const pi, pcl::PointXYZI *const po)
+void OdomEstimationDmapping::pointAssociateToMap(pcl::PointXYZI const *const pi, pcl::PointXYZI *const po)
 {
   Eigen::Vector3d point_curr(pi->x, pi->y, pi->z);
   Eigen::Vector3d point_w = q_w_curr * point_curr + t_w_curr;
@@ -333,14 +170,14 @@ void OdomEstimationClass::pointAssociateToMap(pcl::PointXYZI const *const pi, pc
   //po->intensity = 1.0;
 }
 
-void OdomEstimationClass::downSamplingToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_pc_out, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc_out){
+void OdomEstimationDmapping::downSamplingToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_pc_out, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_pc_out){
   downSizeFilterEdge.setInputCloud(edge_pc_in);
   downSizeFilterEdge.filter(*edge_pc_out);
   downSizeFilterSurf.setInputCloud(surf_pc_in);
   downSizeFilterSurf.filter(*surf_pc_out);
 }
 
-void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function){
+void OdomEstimationDmapping::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function){
   int corner_num=0;
   for (int i = 0; i < (int)pc_in->points.size(); i++)
   {
@@ -394,7 +231,7 @@ void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI
 
 }
 
-void OdomEstimationClass::addSurfCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function){
+void OdomEstimationDmapping::addSurfCostFactor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pc_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& map_in, ceres::Problem& problem, ceres::LossFunction *loss_function){
   int surf_num=0;
   for (int i = 0; i < (int)pc_in->points.size(); i++)
   {
@@ -449,7 +286,7 @@ void OdomEstimationClass::addSurfCostFactor(const pcl::PointCloud<pcl::PointXYZI
 
 }
 
-void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledEdgeCloud, const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledSurfCloud){
+void OdomEstimationDmapping::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledEdgeCloud, const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledSurfCloud){
 
 
   for (int i = 0; i < (int)downsampledEdgeCloud->points.size(); i++)
@@ -492,13 +329,13 @@ void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::
 
 }
 
-void OdomEstimationClass::getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap){
+void OdomEstimationDmapping::getMap(pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudMap){
 
   *laserCloudMap += *laserCloudSurfMap;
   *laserCloudMap += *laserCloudCornerMap;
 }
 
-OdomEstimationClass::OdomEstimationClass(){
+OdomEstimationDmapping::OdomEstimationClass(){
 
 
 
@@ -516,7 +353,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<ve
   return converted;
 }
 
-bool OdomEstimationClass::KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud, const Eigen::Isometry3d& pose){ // determines if the current pose is a new keyframe
+bool OdomEstimationDmapping::KeyFrameUpdate(pcl::PointCloud<pcl::PointXYZI>::Ptr surf_cloud, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_cloud, const Eigen::Isometry3d& pose){ // determines if the current pose is a new keyframe
 
   const keyframe currentFrame{pose, edge_cloud, surf_cloud};
   static bool first = true;

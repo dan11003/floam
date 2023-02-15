@@ -45,6 +45,8 @@ void SaveOdom(
 
 sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in, const Eigen::Quaterniond& extQRPY);
 
+Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez);
+
 
 
 //Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.

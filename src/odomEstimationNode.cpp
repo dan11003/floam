@@ -220,8 +220,11 @@ void odom_estimation(){
             SurfElCloud surfElCloud;
             std::cout << "surf extract" << std::endl;
             surfEl.Extract(surfElCloud);
+            SurfElCloud surfElCloudTransformed = surfElCloud.Transform(vectorToAffine3d(0.1, 0.1, 0.1, 0.1, 0.1, M_PI));
             std::cout << "surf extracted" << std::endl;
             pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals = surfElCloud.GetPointCloud();
+
+            pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormalsTransformed = surfElCloudTransformed.GetPointCloud();
 
 
 
@@ -235,6 +238,7 @@ void odom_estimation(){
 
             PublishCloud("normals",*surfInNormals,"sensor", ros::Time::now());
             pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);
+            pcl::io::savePCDFileBinary("/home/daniel/Music/cloudTrans.pcd", *surfInNormalsTransformed);
 
 
 

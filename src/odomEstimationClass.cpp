@@ -1,10 +1,10 @@
-// Author of FLOAM: Wang Han 
+// Author of FLOAM: Wang Han
 // Email wh200720041@gmail.com
 // Homepage https://wanghan.pro
 
 #include "odomEstimationClass.h"
 
-NormalCloud::Ptr SurfElCloud::GetPointCloud(){
+NormalCloud::Ptr SurfElCloud::GetPointCloud()const{
   NormalCloud::Ptr output(new NormalCloud());
   for(auto && surfEl : cloud){
     pcl::PointXYZINormal pnt;
@@ -16,7 +16,7 @@ NormalCloud::Ptr SurfElCloud::GetPointCloud(){
   return output;
 }
 
-SurfElCloud SurfElCloud::Transform(const Eigen::Isometry3d& transform){
+SurfElCloud SurfElCloud::Transform(const Eigen::Isometry3d& transform)const{
   SurfElCloud SurfElTransformed = *this;
   for(auto itr = SurfElTransformed.begin(); itr != SurfElTransformed.end(); itr++){
     itr->centerPoint = transform*itr->centerPoint;
@@ -206,7 +206,7 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
 }
 
 
-void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu){
+void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu){
   ros::Time t0 = ros::Time::now();
   if(!deskew){
     updatePointsToMap(edge_in, surf_in, qImu, UpdateType::VANILLA);
@@ -216,6 +216,7 @@ void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelC
     Eigen::Vector3d velocity = GetVelocity();
     dmapping::CompensateVelocity(edge_in, velocity);
     dmapping::CompensateVelocity(surf_in, velocity);
+    dmapping::CompensateVelocity(less_edge_in, velocity);
 
     ros::Time t1 = ros::Time::now();
     updatePointsToMap(edge_in, surf_in, qImu, UpdateType::REFINEMENT_AND_UPDATE);
@@ -223,7 +224,7 @@ void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelC
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
   }
 }
-void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
+void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
 
   if(odom_initiated_ == false){
       pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
@@ -231,7 +232,7 @@ void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& su
       initMapWithPoints(uncompensated_edge_in, uncompensated_surf_in, qImu);
       odom_initiated_ = true;
   }else{
-      UpdatePointsToMapSelector(edge_in, surf_in, true, qImu);
+      UpdatePointsToMapSelector(edge_in, surf_in, less_edge_in, true, qImu);
   }
   odom_out = odom;
 }

@@ -222,4 +222,13 @@ Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, doub
       Eigen::AngleAxis<double>(ez, Eigen::Vector3d::UnitZ());
 }
 
+Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl){
+  Eigen::Matrix4d prediction = Eigen::Matrix4d::Zero();
+  Eigen::Matrix4d pred_mat;
+  pred_mat.setIdentity();
+  pred_mat.block<3,3>(0,0) = q.toRotationMatrix();
+  pred_mat.block<3,1>(0,3) = transl;
+  return Eigen::Isometry3d(pred_mat);
+}
+
 

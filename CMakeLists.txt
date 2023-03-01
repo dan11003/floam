@@ -58,19 +58,26 @@ set (${PROJECT_NAME}_LIB_SRCS
   src/utils.cpp
   src/lidar.cpp
   src/dataHandler.cpp
-  src/dataHandler.cpp
 )
-
-
 add_library(${PROJECT_NAME} ${${PROJECT_NAME}_LIB_SRCS})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}  ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} )
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} )
+
+set (${PROJECT_NAME}_ODOMEST_LIB_SRCS
+    src/lidarOptimization.cpp
+    src/odomEstimationClass.cpp
+    src/odomEstimationDmapping.cpp
+    src/registration.cpp
+    )
+
+add_library(${PROJECT_NAME}_ODOMEST_LIB ${${PROJECT_NAME}_ODOMEST_LIB_SRCS})
+target_link_libraries(${PROJECT_NAME}_ODOMEST_LIB ${PROJECT_NAME} ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${PCL_LIBRARIES} )
 
 
 add_executable(floam_laser_processing_node src/laserProcessingNode.cpp src/laserProcessingClass.cpp )
 target_link_libraries(floam_laser_processing_node ${EIGEN3_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${PROJECT_NAME})
 
-add_executable(floam_odom_estimation_node src/odomEstimationNode.cpp src/lidarOptimization.cpp src/odomEstimationClass.cpp )
-target_link_libraries(floam_odom_estimation_node ${EIGEN3_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${PROJECT_NAME})
+add_executable(floam_odom_estimation_node src/odomEstimationNode.cpp )
+target_link_libraries(floam_odom_estimation_node ${EIGEN3_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${CERES_LIBRARIES} ${PROJECT_NAME}_ODOMEST_LIB ${PROJECT_NAME})
 add_dependencies(floam_odom_estimation_node ${catkin_EXPORTED_TARGETS})
 
 

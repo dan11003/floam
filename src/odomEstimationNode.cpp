@@ -174,7 +174,48 @@ void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurv
 
   pubLaserCloudInfo.publish(cloudInfo);
 }
+void Publish(const Eigen::Isometry3d& poseEstimate, const ros::Time& ros_cloud_time, VelCurve::Ptr& merged, VelCurve::Ptr& surf, VelCurve::Ptr& edge, VelCurve::Ptr& less_edge){
+  Eigen::Quaterniond q_current(poseEstimate.rotation());
+  Eigen::Vector3d t_current = poseEstimate.translation();
 
+  const ros::Time tNow = ros::Time::now();
+  static tf::TransformBroadcaster br;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(t_current.x(), t_current.y(), t_current.z()) );
+  tf::Quaternion q(q_current.x(),q_current.y(),q_current.z(),q_current.w());
+  transform.setRotation(q);
+  br.sendTransform(tf::StampedTransform(transform, ros_cloud_time, odom_link, sensor_link));
+  br.sendTransform(tf::StampedTransform(transform, tNow, odom_link, sensor_link_now));
+
+  // publish odometry
+  nav_msgs::Odometry laserOdometry;
+  laserOdometry.header.frame_id = odom_link;
+  laserOdometry.child_frame_id = sensor_link;
+  laserOdometry.header.stamp = ros_cloud_time; // ros::Time::now();
+  laserOdometry.pose.pose.orientation.x = q_current.x();
+  laserOdometry.pose.pose.orientation.y = q_current.y();
+  laserOdometry.pose.pose.orientation.z = q_current.z();
+  laserOdometry.pose.pose.orientation.w = q_current.w();
+  laserOdometry.pose.pose.position.x = t_current.x();
+  laserOdometry.pose.pose.position.y = t_current.y();
+  laserOdometry.pose.pose.position.z = t_current.z();
+
+  nav_msgs::Odometry laserOdometryNow = laserOdometry;
+  laserOdometryNow.header.stamp = ros::Time::now();
+  laserOdometryNow.child_frame_id = sensor_link_now;
+
+  pubLaserOdometry.publish(laserOdometry);
+  pubLaserOdometryNow.publish(laserOdometryNow);
+
+  PublishCloud("/scan_registered", *merged, sensor_link_now, tNow);
+
+  PublishInfo(laserOdometry, surf, edge, merged, ros_cloud_time);
+
+  merged->header.stamp = pcl_conversions::toPCL(ros_cloud_time);
+  dataStorage.poses.push_back(poseEstimate);
+  dataStorage.clouds.push_back(VelToIntensityCopy(merged));
+  dataStorage.keyframe_stamps.push_back(ros_cloud_time.toSec());
+}
 void odom_estimation(){
     ros::Time tPrev = ros::Time::now();
     while(ros::ok()){
@@ -184,134 +225,51 @@ void odom_estimation(){
             break;
         }
         if(!ProcessedDataBuf.empty()){
-
-            //read data
             mutex_lock.lock();
             if(ProcessedDataBuf.size() > 10){
-            std::cout <<"\"FLOAM\" - Slow processing - in queue: " << ProcessedDataBuf.size() << " scans."<< std::endl;
+              std::cout <<"\"FLOAM\" - Slow processing - in queue: " << ProcessedDataBuf.size() << " scans."<< std::endl;
             }
-
             tPrev = ros::Time::now();
-            //if time aligned
-
-            VelCurve::Ptr pointcloud_edge_in(new VelCurve());
-            VelCurve::Ptr pointcloud_surf_in(new VelCurve());
+            VelCurve::Ptr pointcloud_edge_in(new VelCurve()); VelCurve::Ptr pointcloud_less_edge_in(new VelCurve()); VelCurve::Ptr pointcloud_surf_in(new VelCurve());
             VelCurve::Ptr merged(new VelCurve());
-            VelCurve::Ptr merged_raw(new VelCurve());
-
 
             pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudEdge, *pointcloud_edge_in);
             pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudSurf, *pointcloud_surf_in);
-            pcl_conversions::toPCL(ProcessedDataBuf.front().pointCloudEdge->header.stamp, merged->header.stamp);
-            pcl_conversions::toPCL(ProcessedDataBuf.front().pointCloudEdge->header.stamp, merged_raw->header.stamp);
-            ros::Time pointcloud_time = (ProcessedDataBuf.front().pointCloudSurf)->header.stamp;
-            sensor_msgs::Imu ImuData = *ProcessedDataBuf.front().imu;
-            Eigen::Quaterniond qCurrent = dmapping::Imu2Orientation(ImuData);
+            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudLessEdge, *pointcloud_less_edge_in);
+
+            const ros::Time ros_cloud_time = (ProcessedDataBuf.front().pointCloudSurf)->header.stamp;
+            const pcl::uint64_t pcl_time = pcl_conversions::toPCL(ros_cloud_time);
+            pointcloud_edge_in->header.stamp = pointcloud_less_edge_in->header.stamp = pointcloud_surf_in->header.stamp = pcl_time;
+
+            const sensor_msgs::Imu ImuData = *ProcessedDataBuf.front().imu;
+            const Eigen::Quaterniond qCurrent = dmapping::Imu2Orientation(ImuData);
 
             ProcessedDataBuf.pop();
             mutex_lock.unlock();
 
-            *merged_raw += *pointcloud_edge_in;
-            *merged_raw += *pointcloud_surf_in;
 
             SurfelExtraction surfEl(pointcloud_surf_in, lidar_param);
-
-
             SurfElCloud surfElCloud;
-            std::cout << "surf extract" << std::endl;
             surfEl.Extract(surfElCloud);
             SurfElCloud surfElCloudTransformed = surfElCloud.Transform(vectorToAffine3d(0.1, 0.1, 0.1, 0.1, 0.1, M_PI));
-            std::cout << "surf extracted" << std::endl;
+
             pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals = surfElCloud.GetPointCloud();
-
             pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormalsTransformed = surfElCloudTransformed.GetPointCloud();
-
-
-
-            std::cout << "surf extract finished" << std::endl;
-            std::uint16_t max_r = 0, min_r = 20;
-            for(auto && pnt : pointcloud_surf_in->points){
-              max_r = std::max(max_r,pnt.ring);
-              min_r = std::min(min_r,pnt.ring);
-            }
-            //std::cout << "max_r: " << max_r << ", min_r: " << min_r << std::endl;
 
             PublishCloud("normals",*surfInNormals,"sensor", ros::Time::now());
             pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);
             pcl::io::savePCDFileBinary("/home/daniel/Music/cloudTrans.pcd", *surfInNormalsTransformed);
 
-
-
             //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
             const ros::Time t0 = ros::Time::now();
-
-
-            odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, qCurrent, poseEstimate);
+            odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, pointcloud_less_edge_in, qCurrent, poseEstimate);
             double velocity = odomEstimation.GetVelocity().norm();
             total_frame++;
             const float time_temp = (ros::Time::now()-t0).toSec();
             total_time+=time_temp;
             ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, velocity);
-            *merged += *pointcloud_surf_in;
-            *merged += *pointcloud_edge_in;
-
-
-
-            Eigen::Quaterniond q_current(poseEstimate.rotation());
-            //q_current.normalize();
-            Eigen::Vector3d t_current = poseEstimate.translation();
-
-            const ros::Time tNow = ros::Time::now();
-            static tf::TransformBroadcaster br;
-            tf::Transform transform;
-            transform.setOrigin( tf::Vector3(t_current.x(), t_current.y(), t_current.z()) );
-            tf::Quaternion q(q_current.x(),q_current.y(),q_current.z(),q_current.w());
-            transform.setRotation(q);
-            br.sendTransform(tf::StampedTransform(transform, pointcloud_time, odom_link, sensor_link));
-            br.sendTransform(tf::StampedTransform(transform, tNow, odom_link, sensor_link_now));
-
-            // publish odometry
-            nav_msgs::Odometry laserOdometry;
-            laserOdometry.header.frame_id = odom_link;
-            laserOdometry.child_frame_id = sensor_link;
-            laserOdometry.header.stamp = pointcloud_time; // ros::Time::now();
-            laserOdometry.pose.pose.orientation.x = q_current.x();
-            laserOdometry.pose.pose.orientation.y = q_current.y();
-            laserOdometry.pose.pose.orientation.z = q_current.z();
-            laserOdometry.pose.pose.orientation.w = q_current.w();
-            laserOdometry.pose.pose.position.x = t_current.x();
-            laserOdometry.pose.pose.position.y = t_current.y();
-            laserOdometry.pose.pose.position.z = t_current.z();
-
-
-
-            nav_msgs::Odometry laserOdometryNow = laserOdometry;
-            laserOdometryNow.header.stamp = ros::Time::now();
-            laserOdometryNow.child_frame_id = sensor_link_now;
-
-            pubLaserOdometry.publish(laserOdometry);
-            pubLaserOdometryNow.publish(laserOdometryNow);
-
-            PublishCloud("/scan_registered", *merged, sensor_link_now, tNow);
-
-            PublishInfo(laserOdometry, pointcloud_surf_in, pointcloud_edge_in, merged, pointcloud_time);
-            //void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<pcl::PointXYZI>::Ptr surf_in, pcl::PointCloud<pcl::PointXYZI>::Ptr edge_in, pcl::PointCloud<pcl::PointXYZI>::Ptr deskewed, const ros::Time& thisStamp){
-
-            //PublishCloud("/scan_registered_uncompensated", *merged_raw, "sensor", tNow);
-
-            Eigen::Matrix4d Trans; // Your Transformation Matrix
-            Trans.setIdentity();   // Set to Identity to make bottom row of Matrix 0,0,0,1
-            Trans.block<3,3>(0,0) = q_current.toRotationMatrix();;
-            Trans.block<3,1>(0,3) = t_current;
-            Eigen::Affine3d eigTransformNow(Trans);
-
-            pcl_conversions::toPCL(pointcloud_time,merged->header.stamp);
-
-            dataStorage.poses.push_back(eigTransformNow);
-            dataStorage.clouds.push_back(VelToIntensityCopy(merged));
-            dataStorage.keyframe_stamps.push_back(pointcloud_time.toSec());
-            //storeage.push_back(VelToIntensityCopy(merged));
-            //g_poses.push_back(eigTransformNow);
+            *merged += *pointcloud_surf_in; *merged += *pointcloud_edge_in; *merged += *pointcloud_less_edge_in;
+            Publish(poseEstimate, ros_cloud_time, merged, pointcloud_surf_in, pointcloud_edge_in, pointcloud_less_edge_in);
 
         }
         //sleep 2 ms every time

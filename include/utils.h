@@ -47,6 +47,8 @@ sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in, const Eigen::Quate
 
 Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez);
 
+Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl);
+
 
 
 //Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.

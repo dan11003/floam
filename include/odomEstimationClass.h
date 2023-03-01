@@ -63,13 +63,13 @@ class SurfElCloud
 public:
   SurfElCloud() {}
 
-  pcl::PointCloud<pcl::PointXYZINormal>::Ptr GetPointCloud();
+  NormalCloud::Ptr GetPointCloud()const;
 
   auto begin(){return cloud.begin();}
 
   auto end(){return cloud.end();}
 
-  SurfElCloud Transform(const Eigen::Isometry3d& transform);
+  SurfElCloud Transform(const Eigen::Isometry3d& transform)const;
 
   std::vector<SurfelPointInfo> cloud;
 
@@ -132,7 +132,7 @@ class OdomEstimationClass
 
     void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 
-    void ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
+    void ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
 
     Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
 
@@ -140,7 +140,7 @@ private:
 
     void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
 
-    void UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, bool deskew, const Eigen::Quaterniond& qImu);
+    void UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu);
 
     /*!
          * \brief updatePointsToMap

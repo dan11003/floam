@@ -133,7 +133,7 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
   }
 }
 
-void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurve::Ptr edge_in, VelCurve::Ptr deskewed, const ros::Time& thisStamp){
+void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurve::Ptr edge_in, VelCurve::Ptr less_edge_in, VelCurve::Ptr deskewed, const ros::Time& thisStamp){
   lio_sam::cloud_info cloudInfo;
   cloudInfo.header.stamp = thisStamp;
   cloudInfo.header.frame_id = sensor_link;
@@ -163,9 +163,13 @@ void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurv
   cloudInfo.cloud_surface.header.stamp = thisStamp;
   cloudInfo.cloud_surface.header.frame_id = sensor_link;
 
-  pcl::toROSMsg(*surf_in, cloudInfo.cloud_corner);
+  pcl::toROSMsg(*edge_in, cloudInfo.cloud_corner);
   cloudInfo.cloud_corner.header.stamp = thisStamp;
   cloudInfo.cloud_corner.header.frame_id = sensor_link;
+
+  pcl::toROSMsg(*less_edge_in, cloudInfo.cloud_less_edge);
+  cloudInfo.cloud_less_edge.header.stamp = thisStamp;
+  cloudInfo.cloud_less_edge.header.frame_id = sensor_link;
 
 
   pcl::toROSMsg(*deskewed, cloudInfo.cloud_deskewed);
@@ -209,7 +213,7 @@ void Publish(const Eigen::Isometry3d& poseEstimate, const ros::Time& ros_cloud_t
 
   PublishCloud("/scan_registered", *merged, sensor_link_now, tNow);
 
-  PublishInfo(laserOdometry, surf, edge, merged, ros_cloud_time);
+  PublishInfo(laserOdometry, surf, edge, less_edge, merged, ros_cloud_time);
 
   merged->header.stamp = pcl_conversions::toPCL(ros_cloud_time);
   dataStorage.poses.push_back(poseEstimate);
@@ -247,23 +251,10 @@ void odom_estimation(){
             ProcessedDataBuf.pop();
             mutex_lock.unlock();
 
-
-            SurfelExtraction surfEl(pointcloud_surf_in, lidar_param);
-            SurfElCloud surfElCloud;
-            surfEl.Extract(surfElCloud);
-            SurfElCloud surfElCloudTransformed = surfElCloud.Transform(vectorToAffine3d(0.1, 0.1, 0.1, 0.1, 0.1, M_PI));
-
-            pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormals = surfElCloud.GetPointCloud();
-            pcl::PointCloud<pcl::PointXYZINormal>::Ptr surfInNormalsTransformed = surfElCloudTransformed.GetPointCloud();
-
-            PublishCloud("normals",*surfInNormals,"sensor", ros::Time::now());
-            pcl::io::savePCDFileBinary("/home/daniel/Music/cloud.pcd", *surfInNormals);
-            pcl::io::savePCDFileBinary("/home/daniel/Music/cloudTrans.pcd", *surfInNormalsTransformed);
-
             //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
             const ros::Time t0 = ros::Time::now();
             odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, pointcloud_less_edge_in, qCurrent, poseEstimate);
-            double velocity = odomEstimation.GetVelocity().norm();
+            const double velocity = odomEstimation.GetVelocity().norm();
             total_frame++;
             const float time_temp = (ros::Time::now()-t0).toSec();
             total_time+=time_temp;
@@ -335,8 +326,6 @@ int main(int argc, char **argv)
     cout << "FLOAM save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
     directory = CreateFolder(directory, "FLOAM");
-
-
 
 
     lidar_param.setScanPeriod(scan_period);

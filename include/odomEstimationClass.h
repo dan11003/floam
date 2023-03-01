@@ -78,6 +78,7 @@ private:
 };
 
 
+
 class SurfelExtraction
 {
 
@@ -104,8 +105,6 @@ private:
   pcl::PointXYZINormal defaultNormal;
 
 };
-
-
 
 
 

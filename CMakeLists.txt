@@ -51,6 +51,7 @@ catkin_package(
   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs lio_sam
   DEPENDS EIGEN3 PCL Ceres 
   INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME} ${PROJECT_NAME}_ODOMEST_LIB
 )
 
 

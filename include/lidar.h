@@ -10,53 +10,11 @@
 #include "eigen3/Eigen/Dense"
 #include "pcl_ros/point_cloud.h"
 #include "pcl_ros/publisher.h"
+#include "lio_sam/generics.h"
 
 using std::endl;
 using std::cout;
 
-namespace vel_point{
-struct PointXYZIRT
-{
-  PCL_ADD_POINT4D;                    // quad-word XYZ
-  float         intensity;            ///< laser intensity reading
-  std::uint16_t ring;                 ///< laser ring number
-  float         time;                 ///< laser time reading
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
-}
-EIGEN_ALIGN16;
-}  // namespace velodyne_pcl
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRT,
-                                  (float, x, x)
-                                  (float, y, y)
-                                  (float, z, z)
-                                  (float, intensity, intensity)
-                                  (std::uint16_t, ring, ring)
-                                  (float, time, time))
-
-namespace vel_point{
-struct PointXYZIRTC
-{
-  PCL_ADD_POINT4D;                    // quad-word XYZ
-  float         intensity;            ///< laser intensity reading
-  std::uint16_t ring;                 ///< laser ring number
-  float         time;                 ///< laser time reading
-  float         curvature;            ///< laser gemetry curvature
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
-}
-EIGEN_ALIGN16;
-}  // namespace velodyne_pcl
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(vel_point::PointXYZIRTC,
-                                  (float, x, x)
-                                  (float, y, y)
-                                  (float, z, z)
-                                  (float, intensity, intensity)
-                                  (std::uint16_t, ring, ring)
-                                  (float, time, time)
-                                  (float, curvature, curvature))
-
-typedef pcl::PointCloud<vel_point::PointXYZIRTC> VelCurve;
 
 typedef pcl::PointCloud<pcl::PointXYZINormal> NormalCloud;
 
@@ -66,14 +24,14 @@ void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
 
 struct lessThanKey
 {
-  inline bool operator() (const vel_point::PointXYZIRTC& p1, const vel_point::PointXYZIRTC& p2)const
+  inline bool operator() (const PointType& p1, const PointType& p2)const
   {
     return (p1.time < p2.time);
   }
 };
 
-inline vel_point::PointXYZIRTC ToCurvature(const vel_point::PointXYZIRT& pnt, const double curvature){
-  vel_point::PointXYZIRTC tmp;
+inline vel_point::PointXYZIRTC ToCurvature(const PointType& pnt, const double curvature){
+  PointType tmp;
   tmp.x = pnt.x; tmp.y = pnt.y; tmp.z = pnt.z;
   tmp.ring = pnt.ring; tmp.time = pnt.time; tmp.intensity = pnt.intensity; tmp.curvature = curvature;
   return tmp;

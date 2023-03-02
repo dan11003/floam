@@ -268,27 +268,7 @@ void odom_estimation(){
         std::this_thread::sleep_for(dura);
     }
 }
-std::string CreateFolder(const std::string& basePath, const std::string& prefix){
 
-  auto t = std::time(nullptr);
-  auto tm = *std::localtime(&t);
-
-  //const std::string timeStr(std::put_time(&tm, "%Y-%m-%d_%H-%M"));
-
-  std::time_t now = std::time(NULL);
-  std::tm * ptm = std::localtime(&now);
-  char buffer[32];
-  // Format: Mo, 15.06.2009 20:20:00
-  std::strftime(buffer, 32, "%a_%Y.%m.%d_%H:%M:%S", ptm);
-
-
-  const std::string dir = basePath + "/" + prefix +"_" + std::string(buffer) + std::string("/");
-
-  if (boost::filesystem::create_directories(dir)){
-      std::cout << "\"FLOAM\" - Created new output directory: "  << dir << std::endl;
-  }
-  return dir;
-}
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "main");
@@ -325,7 +305,7 @@ int main(int argc, char **argv)
     nh.param<bool>("/export_odom_pcd", export_pcd, true);
     cout << "FLOAM save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
-    directory = CreateFolder(directory, "FLOAM");
+    directory = IO::CreateFolder(directory, "FLOAM", "FLOAM");
 
 
     lidar_param.setScanPeriod(scan_period);

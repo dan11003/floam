@@ -104,38 +104,6 @@ void SaveOdom(
     data_ofs.close();
   }
 }
-sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in, const Eigen::Quaterniond& extQRPY){
-  sensor_msgs::Imu imu_out = imu_in;
-  Eigen::Matrix3d extRot(extQRPY.toRotationMatrix());
-  // rotate acceleration
-  Eigen::Vector3d acc(imu_in.linear_acceleration.x, imu_in.linear_acceleration.y, imu_in.linear_acceleration.z);
-  acc = extRot * acc;
-  imu_out.linear_acceleration.x = acc.x();
-  imu_out.linear_acceleration.y = acc.y();
-  imu_out.linear_acceleration.z = acc.z();
-  // rotate gyroscope
-  Eigen::Vector3d gyr(imu_in.angular_velocity.x, imu_in.angular_velocity.y, imu_in.angular_velocity.z);
-  gyr = extRot * gyr;
-  imu_out.angular_velocity.x = gyr.x();
-  imu_out.angular_velocity.y = gyr.y();
-  imu_out.angular_velocity.z = gyr.z();
-  // rotate roll pitch yaw
-  Eigen::Quaterniond q_from(imu_in.orientation.w, imu_in.orientation.x, imu_in.orientation.y, imu_in.orientation.z);
-  Eigen::Quaterniond q_final = q_from * extQRPY;
-  imu_out.orientation.x = q_final.x();
-  imu_out.orientation.y = q_final.y();
-  imu_out.orientation.z = q_final.z();
-  imu_out.orientation.w = q_final.w();
-
-  if (sqrt(q_final.x()*q_final.x() + q_final.y()*q_final.y() + q_final.z()*q_final.z() + q_final.w()*q_final.w()) < 0.1)
-  {
-    ROS_ERROR("Invalid quaternion, please use a 9-axis IMU!");
-    ros::shutdown();
-  }
-
-  return imu_out;
-}
-
 
 
 std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, int k, float max, float query) {
@@ -215,12 +183,7 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
   return indicies;
 }
 
-Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez) {
-  return Eigen::Translation<double, 3>(x, y, z) *
-      Eigen::AngleAxis<double>(ex, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxis<double>(ey, Eigen::Vector3d::UnitY()) *
-      Eigen::AngleAxis<double>(ez, Eigen::Vector3d::UnitZ());
-}
+
 
 Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl){
   Eigen::Matrix4d prediction = Eigen::Matrix4d::Zero();

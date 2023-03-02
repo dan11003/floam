@@ -41,15 +41,15 @@ public:
 
     void init(lidar::Lidar lidar_param_in);
 
-    void featureExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge);
+    void featureExtraction(const pcl::PointCloud<PointType>::Ptr& pc_in, pcl::PointCloud<PointType>::Ptr& pc_out_edge, pcl::PointCloud<PointType>::Ptr& pc_out_surf, pcl::PointCloud<PointType>::Ptr& pc_out_less_flat, pcl::PointCloud<PointType>::Ptr& pc_out_less_edge);
 
-    void featureExtractionFromSector(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge);
+    void featureExtractionFromSector(const pcl::PointCloud<PointType>::Ptr& pc_in, std::vector<Double2d>& cloudCurvature, pcl::PointCloud<PointType>::Ptr& pc_out_edge, pcl::PointCloud<PointType>::Ptr& pc_out_surf, pcl::PointCloud<PointType>::Ptr& pc_out_less_flat, pcl::PointCloud<PointType>::Ptr& pc_out_less_edge);
 
-    void RingExtraction(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans);
+    void RingExtraction(const pcl::PointCloud<PointType>::Ptr& pc_in, std::vector<pcl::PointCloud<PointType>::Ptr> laserCloudScans);
 
-    void RingExtractionVelodyne(const pcl::PointCloud<vel_point::PointXYZIRT>::Ptr& pc_in, std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr>& laserCloudScans, std::vector<std::vector<double> >& range_image);
+    void RingExtractionVelodyne(const pcl::PointCloud<PointType>::Ptr& pc_in, std::vector<pcl::PointCloud<PointType>::Ptr>& laserCloudScans, std::vector<std::vector<double> >& range_image);
 
-    void FloamFeatures(std::vector<pcl::PointCloud<vel_point::PointXYZIRT>::Ptr> laserCloudScans, VelCurve::Ptr& pc_out_edge, VelCurve::Ptr& pc_out_surf, VelCurve::Ptr& pc_out_less_flat, VelCurve::Ptr& pc_out_less_edge);
+    void FloamFeatures(std::vector<pcl::PointCloud<PointType>::Ptr> laserCloudScans, pcl::PointCloud<PointType>::Ptr& pc_out_edge, pcl::PointCloud<PointType>::Ptr& pc_out_surf, pcl::PointCloud<PointType>::Ptr& pc_out_less_flat, pcl::PointCloud<PointType>::Ptr& pc_out_less_edge);
 
 
 private:

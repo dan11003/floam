@@ -65,9 +65,9 @@ private:
 
 };
 
-bool Compensate(pcl::PointCloud<vel_point::PointXYZIRT>&input, pcl::PointCloud<vel_point::PointXYZIRT>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics);
+bool Compensate(pcl::PointCloud<PointType>&input, pcl::PointCloud<PointType>& compensated, ImuHandler& handler, Eigen::Quaterniond& extrinsics);
 
-void CompensateVelocity(pcl::PointCloud<vel_point::PointXYZIRT>::Ptr input, const Eigen::Vector3d& velocity);
+void CompensateVelocity(pcl::PointCloud<PointType>::Ptr input, const Eigen::Vector3d& velocity);
 
 
 }

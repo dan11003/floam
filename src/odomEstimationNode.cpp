@@ -41,14 +41,15 @@ using namespace sensor_msgs;
 using namespace message_filters;
 
 bool deskew = false;
+boost::shared_ptr<PoseGraph> graph = nullptr;
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
 typedef struct
 {
- sensor_msgs::PointCloud2ConstPtr pointCloudEdge;
- sensor_msgs::PointCloud2ConstPtr pointCloudSurf;
- sensor_msgs::PointCloud2ConstPtr pointCloudLessEdge;
- sensor_msgs::ImuConstPtr imu;
+  sensor_msgs::PointCloud2ConstPtr pointCloudEdge;
+  sensor_msgs::PointCloud2ConstPtr pointCloudSurf;
+  sensor_msgs::PointCloud2ConstPtr pointCloudLessEdge;
+  sensor_msgs::ImuConstPtr imu;
 }ProcessedData;
 std::queue<ProcessedData> ProcessedDataBuf;
 
@@ -59,6 +60,7 @@ bool keep_running = true;
 std::string sensor_link = "base_link";
 std::string sensor_link_now = "base_link_now";
 std::string odom_link = "odom";
+bool saveRefinementGraph = false;
 
 ros::Publisher pubLaserOdometry;
 ros::Publisher pubLaserOdometryNow;
@@ -108,11 +110,11 @@ void SaveMerged(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, 
 }
 
 void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clouds, const std::vector<Eigen::Affine3d> poses, const std::string& directory, double downsample_size){
-    boost::filesystem::create_directories(directory);
-    const std::string filename = directory + "alidarPose.csv";
-    std::fstream stream(filename.c_str(), std::fstream::out);
-    std::cout << "\"FLOAM\"  - Save BALM to:\n" << directory << std::endl << std::endl;
-    /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
+  boost::filesystem::create_directories(directory);
+  const std::string filename = directory + "alidarPose.csv";
+  std::fstream stream(filename.c_str(), std::fstream::out);
+  std::cout << "\"FLOAM\"  - Save BALM to:\n" << directory << std::endl << std::endl;
+  /*std::cout << "Saving clouds size: " <<clouds.size() << std::endl;;
     std::cout << "Saving poses size: " <<poses.size() << std::endl;*/
   pcl::PointCloud<pcl::PointXYZI>::Ptr merged_transformed(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::PointCloud<pcl::PointXYZI> merged_downsamapled;
@@ -133,7 +135,7 @@ void SavePosesHomogeneousBALM(const std::vector<pcl::PointCloud<pcl::PointXYZI>:
   }
 }
 
-void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurve::Ptr edge_in, VelCurve::Ptr less_edge_in, VelCurve::Ptr deskewed, const ros::Time& thisStamp){
+void PublishInfo(nav_msgs::Odometry startOdomMsg, pcl::PointCloud<PointType>::Ptr surf_in, pcl::PointCloud<PointType>::Ptr edge_in, pcl::PointCloud<PointType>::Ptr less_edge_in, pcl::PointCloud<PointType>::Ptr deskewed, const ros::Time& thisStamp){
   lio_sam::cloud_info cloudInfo;
   cloudInfo.header.stamp = thisStamp;
   cloudInfo.header.frame_id = sensor_link;
@@ -178,7 +180,7 @@ void PublishInfo(nav_msgs::Odometry startOdomMsg, VelCurve::Ptr surf_in, VelCurv
 
   pubLaserCloudInfo.publish(cloudInfo);
 }
-void Publish(const Eigen::Isometry3d& poseEstimate, const ros::Time& ros_cloud_time, VelCurve::Ptr& merged, VelCurve::Ptr& surf, VelCurve::Ptr& edge, VelCurve::Ptr& less_edge){
+void Publish(const Eigen::Isometry3d& poseEstimate, const ros::Time& ros_cloud_time, pcl::PointCloud<PointType>::Ptr& merged, pcl::PointCloud<PointType>::Ptr& surf, pcl::PointCloud<PointType>::Ptr& edge, pcl::PointCloud<PointType>::Ptr& less_edge){
   Eigen::Quaterniond q_current(poseEstimate.rotation());
   Eigen::Vector3d t_current = poseEstimate.translation();
 
@@ -219,146 +221,161 @@ void Publish(const Eigen::Isometry3d& poseEstimate, const ros::Time& ros_cloud_t
   dataStorage.poses.push_back(poseEstimate);
   dataStorage.clouds.push_back(VelToIntensityCopy(merged));
   dataStorage.keyframe_stamps.push_back(ros_cloud_time.toSec());
+
 }
 void odom_estimation(){
-    ros::Time tPrev = ros::Time::now();
-    while(ros::ok()){
-        if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(3.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
-            keep_running = false;
-            std::cout << "\"FLOAM\"  - No more data to process" << std::endl;
-            break;
-        }
-        if(!ProcessedDataBuf.empty()){
-            mutex_lock.lock();
-            if(ProcessedDataBuf.size() > 10){
-              std::cout <<"\"FLOAM\" - Slow processing - in queue: " << ProcessedDataBuf.size() << " scans."<< std::endl;
-            }
-            tPrev = ros::Time::now();
-            VelCurve::Ptr pointcloud_edge_in(new VelCurve()); VelCurve::Ptr pointcloud_less_edge_in(new VelCurve()); VelCurve::Ptr pointcloud_surf_in(new VelCurve());
-            VelCurve::Ptr merged(new VelCurve());
-
-            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudEdge, *pointcloud_edge_in);
-            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudSurf, *pointcloud_surf_in);
-            pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudLessEdge, *pointcloud_less_edge_in);
-
-            const ros::Time ros_cloud_time = (ProcessedDataBuf.front().pointCloudSurf)->header.stamp;
-            const pcl::uint64_t pcl_time = pcl_conversions::toPCL(ros_cloud_time);
-            pointcloud_edge_in->header.stamp = pointcloud_less_edge_in->header.stamp = pointcloud_surf_in->header.stamp = pcl_time;
-
-            const sensor_msgs::Imu ImuData = *ProcessedDataBuf.front().imu;
-            const Eigen::Quaterniond qCurrent = dmapping::Imu2Orientation(ImuData);
-
-            ProcessedDataBuf.pop();
-            mutex_lock.unlock();
-
-            //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
-            const ros::Time t0 = ros::Time::now();
-            odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, pointcloud_less_edge_in, qCurrent, poseEstimate);
-            const double velocity = odomEstimation.GetVelocity().norm();
-            total_frame++;
-            const float time_temp = (ros::Time::now()-t0).toSec();
-            total_time+=time_temp;
-            ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, velocity);
-            *merged += *pointcloud_surf_in; *merged += *pointcloud_edge_in; *merged += *pointcloud_less_edge_in;
-            Publish(poseEstimate, ros_cloud_time, merged, pointcloud_surf_in, pointcloud_edge_in, pointcloud_less_edge_in);
-
-        }
-        //sleep 2 ms every time
-        std::chrono::milliseconds dura(2);
-        std::this_thread::sleep_for(dura);
+  ros::Time tPrev = ros::Time::now();
+  while(ros::ok()){
+    if( total_frame > 0 && (ros::Time::now() -  tPrev > ros::Duration(3.0))  ){// The mapper has been running (total_frame > 0), but no new data for over a second  - rosbag play was stopped.
+      keep_running = false;
+      std::cout << "\"FLOAM\"  - No more data to process" << std::endl;
+      break;
     }
+    if(!ProcessedDataBuf.empty()){
+      mutex_lock.lock();
+      if(ProcessedDataBuf.size() > 10){
+        std::cout <<"\"FLOAM\" - Slow processing - in queue: " << ProcessedDataBuf.size() << " scans."<< std::endl;
+      }
+      tPrev = ros::Time::now();
+      pcl::PointCloud<PointType>::Ptr pointcloud_edge_in(new pcl::PointCloud<PointType>()); pcl::PointCloud<PointType>::Ptr pointcloud_less_edge_in(new pcl::PointCloud<PointType>()); pcl::PointCloud<PointType>::Ptr pointcloud_surf_in(new pcl::PointCloud<PointType>());
+      pcl::PointCloud<PointType>::Ptr merged(new pcl::PointCloud<PointType>());
+
+      pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudEdge, *pointcloud_edge_in);
+      pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudSurf, *pointcloud_surf_in);
+      pcl::fromROSMsg(*ProcessedDataBuf.front().pointCloudLessEdge, *pointcloud_less_edge_in);
+
+      const ros::Time ros_cloud_time = (ProcessedDataBuf.front().pointCloudSurf)->header.stamp;
+      const pcl::uint64_t pcl_time = pcl_conversions::toPCL(ros_cloud_time);
+      pointcloud_edge_in->header.stamp = pointcloud_less_edge_in->header.stamp = pointcloud_surf_in->header.stamp = pcl_time;
+
+      const sensor_msgs::Imu ImuData = *ProcessedDataBuf.front().imu;
+      const Eigen::Quaterniond qCurrent = dmapping::Imu2Orientation(ImuData);
+
+      ProcessedDataBuf.pop();
+      mutex_lock.unlock();
+
+      //cout << "itr - size: " << uncompensated_edge_in->size() << ", " << uncompensated_surf_in->size() << endl;
+      const ros::Time t0 = ros::Time::now();
+      odomEstimation.ProcessFrame(pointcloud_edge_in, pointcloud_surf_in, pointcloud_less_edge_in, qCurrent, poseEstimate);
+      const double velocity = odomEstimation.GetVelocity().norm();
+      total_frame++;
+      const float time_temp = (ros::Time::now()-t0).toSec();
+      total_time+=time_temp;
+      ROS_INFO("\"FLOAM\" - Frame: %d. Average time / frame %lf [ms]. Speed %lf [m/s]\n",total_frame, total_time/total_frame, velocity);
+      *merged += *pointcloud_surf_in; *merged += *pointcloud_edge_in; *merged += *pointcloud_less_edge_in;
+      Publish(poseEstimate, ros_cloud_time, merged, pointcloud_surf_in, pointcloud_edge_in, pointcloud_less_edge_in);
+
+      if(graph != nullptr){
+        Node n;
+        n.T = poseEstimate;
+        n.segmented_scans = {pointcloud_surf_in, pointcloud_edge_in, pointcloud_less_edge_in};
+        graph->AddNode(n, total_frame);
+      }
+
+    }
+    //sleep 2 ms every time
+    std::chrono::milliseconds dura(2);
+    std::this_thread::sleep_for(dura);
+  }
 }
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "main");
-    ros::NodeHandle nh;
+  ros::init(argc, argv, "main");
+  ros::NodeHandle nh;
 
-    std::string directory;
-    int scan_line = 64;
-    double vertical_angle = 2.0;
-    double scan_period= 0.1;
-    double max_dis = 60.0;
-    double min_dis = 2.0;
-    double map_resolution = 0.4;
-    double output_downsample_size = 0.05;
-    std::string loss_function = "Huber";
-    bool save_Posegraph = false;
-    bool save_BALM = true;
-    bool save_odom = false;
-    bool export_pcd = true;
-
-
-    nh.getParam("/scan_period", scan_period);
-    nh.getParam("/vertical_angle", vertical_angle);
-    nh.getParam("/max_dis", max_dis);
-    nh.getParam("/min_dis", min_dis);
-    nh.getParam("/scan_line", scan_line);
-    nh.getParam("/map_resolution", map_resolution);
-    nh.getParam("/directory_output", directory);
-    nh.getParam("/output_downsample_size", output_downsample_size);
-    nh.getParam("/loss_function", loss_function);
-    nh.getParam("/deskew", deskew);
-    nh.param<bool>("/odom_save_balm", save_BALM, false);
-    nh.param<bool>("/odom_save_posegraph", save_Posegraph, false);
-    nh.param<bool>("/odom_save_odom", save_odom, false);
-    nh.param<bool>("/export_odom_pcd", export_pcd, true);
-    cout << "FLOAM save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
-
-    directory = IO::CreateFolder(directory, "FLOAM", "FLOAM");
+  std::string directory;
+  int scan_line = 64;
+  double vertical_angle = 2.0;
+  double scan_period= 0.1;
+  double max_dis = 60.0;
+  double min_dis = 2.0;
+  double map_resolution = 0.4;
+  double output_downsample_size = 0.05;
+  std::string loss_function = "Huber";
+  bool save_Posegraph = false;
+  bool save_BALM = true;
+  bool save_odom = false;
+  bool export_pcd = true;
 
 
-    lidar_param.setScanPeriod(scan_period);
-    lidar_param.setVerticalAngle(vertical_angle);
-    lidar_param.setLines(scan_line);
-    lidar_param.setMaxDistance(max_dis);
-    lidar_param.setMinDistance(min_dis);
+  nh.getParam("/scan_period", scan_period);
+  nh.getParam("/vertical_angle", vertical_angle);
+  nh.getParam("/max_dis", max_dis);
+  nh.getParam("/min_dis", min_dis);
+  nh.getParam("/scan_line", scan_line);
+  nh.getParam("/map_resolution", map_resolution);
+  nh.getParam("/directory_output", directory);
+  nh.getParam("/output_downsample_size", output_downsample_size);
+  nh.getParam("/loss_function", loss_function);
+  nh.getParam("/deskew", deskew);
+  nh.param<bool>("/odom_save_balm", save_BALM, false);
+  nh.param<bool>("/odom_save_posegraph", save_Posegraph, false);
+  nh.param<bool>("/odom_save_odom", save_odom, false);
+  nh.param<bool>("/export_odom_pcd", export_pcd, true);
+  nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, true);
+  if(saveRefinementGraph)
+    graph = boost::shared_ptr<PoseGraph>(new PoseGraph());
 
-    odomEstimation.init(lidar_param, map_resolution, loss_function);
+  cout << "FLOAM save_BALM: " << save_BALM << ", save_Posegraph: " << save_Posegraph << ", save_odom: " << save_odom << ", export_slam_pcd: " << export_pcd << endl;
 
-    message_filters::Subscriber<PointCloud2> sub_edge(nh, "/laser_cloud_edge", 1);
-    message_filters::Subscriber<PointCloud2> sub2_surf(nh, "/laser_cloud_surf", 1);
-    message_filters::Subscriber<PointCloud2> sub3_less_edge(nh, "/laser_cloud_less_edge", 1);
-    message_filters::Subscriber<Imu> sub_imu(nh, "/synced/imu/data", 1);
-
-    typedef sync_policies::ApproximateTime<PointCloud2, PointCloud2, PointCloud2, Imu> MySyncPolicy;
-     // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
-    Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub_edge, sub2_surf, sub3_less_edge, sub_imu);
-    sync.registerCallback(boost::bind(&TrippleCallback, _1, _2, _3, _4));
-
-    pubLaserOdometryNow = nh.advertise<nav_msgs::Odometry>("/odom_now", 100);
-    pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
-    pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/feature/cloud_info", 1);
-    std::thread odom_estimation_process{odom_estimation};
-
-    ros::Rate r(100); // 10 hz
-    while (keep_running){
-      ros::spinOnce();
-      r.sleep();
-    }
+  directory = IO::CreateFolder(directory, "FLOAM", "FLOAM");
 
 
-    if(export_pcd){
-      std::cout << "\"FLOAM\" - output directory: " << directory << std::endl;
-      std::cout << "\"FLOAM\" - Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
-      SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
-    }
-    else{
-      std::cout << "\"FLOAM\"  - Saving disabled " << std::endl;
-    }
-    if(save_BALM && export_pcd){
-      //cout << "Save BALM data " << endl;
-      SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
-    }
-    if(save_Posegraph && export_pcd){
-      //cout << "Save Posegraph" << endl;
-      SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
-    }
-    if(save_odom && export_pcd){
-      //cout << "Save Posegraph" << endl;
-      SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
-    }
-    std::cout << "\"FLOAM\" - Program finished nicely" << std::endl << std::endl;
+  lidar_param.setScanPeriod(scan_period);
+  lidar_param.setVerticalAngle(vertical_angle);
+  lidar_param.setLines(scan_line);
+  lidar_param.setMaxDistance(max_dis);
+  lidar_param.setMinDistance(min_dis);
+
+  odomEstimation.init(lidar_param, map_resolution, loss_function);
+
+  message_filters::Subscriber<PointCloud2> sub_edge(nh, "/laser_cloud_edge", 1);
+  message_filters::Subscriber<PointCloud2> sub2_surf(nh, "/laser_cloud_surf", 1);
+  message_filters::Subscriber<PointCloud2> sub3_less_edge(nh, "/laser_cloud_less_edge", 1);
+  message_filters::Subscriber<Imu> sub_imu(nh, "/synced/imu/data", 1);
+
+  typedef sync_policies::ApproximateTime<PointCloud2, PointCloud2, PointCloud2, Imu> MySyncPolicy;
+  // ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
+  Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), sub_edge, sub2_surf, sub3_less_edge, sub_imu);
+  sync.registerCallback(boost::bind(&TrippleCallback, _1, _2, _3, _4));
+
+  pubLaserOdometryNow = nh.advertise<nav_msgs::Odometry>("/odom_now", 100);
+  pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
+  pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/feature/cloud_info", 1);
+  std::thread odom_estimation_process{odom_estimation};
+
+  ros::Rate r(100); // 10 hz
+  while (keep_running){
+    ros::spinOnce();
+    r.sleep();
+  }
+
+
+  if(export_pcd){
+    std::cout << "\"FLOAM\" - output directory: " << directory << std::endl;
+    std::cout << "\"FLOAM\" - Poses: " <<dataStorage.poses.size() << ", Scans: " <<dataStorage.clouds.size() << std::endl;
+    SaveMerged(dataStorage.clouds, dataStorage.poses, directory, output_downsample_size);
+  }
+  else{
+    std::cout << "\"FLOAM\"  - Saving disabled " << std::endl;
+  }
+  if(save_BALM && export_pcd){
+    //cout << "Save BALM data " << endl;
+    SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
+  }
+  if(save_Posegraph && export_pcd){
+    //cout << "Save Posegraph" << endl;
+    SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
+  }
+  if(save_odom && export_pcd){
+    //cout << "Save Posegraph" << endl;
+    SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
+  }
+  if(saveRefinementGraph){
+    PoseGraph::SaveGraph(directory + "graph.pg", graph);
+  }
+  std::cout << "\"FLOAM\" - Program finished nicely" << std::endl << std::endl;
 
   return 0;
 }

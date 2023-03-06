@@ -24,7 +24,7 @@ SurfElCloud SurfElCloud::Transform(const Eigen::Isometry3d& transform)const{
   }
   return SurfElTransformed;
 }
-SurfelExtraction::SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
+SurfelExtraction::SurfelExtraction(pcl::PointCloud<PointType>::Ptr& surf_in, lidar::Lidar& lidar_par) : lidar_par_(lidar_par){
   surf_in_ = surf_in;
   Initialize();
 }
@@ -34,7 +34,7 @@ void SurfelExtraction::Initialize(){
   ringClouds_.resize(lidar_par_.num_lines);
   times_.resize(lidar_par_.num_lines);
   for(int i = 0 ; i < ringClouds_.size() ; i++){ // initiaize clouds
-    ringClouds_[i] = VelCurve::Ptr(new VelCurve());
+    ringClouds_[i] = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>());
   }
   for(auto&& pnt : surf_in_->points){ // Fill up
     ringClouds_[pnt.ring]->push_back(pnt);
@@ -206,7 +206,7 @@ void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI
 }
 
 
-void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu){
+void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<PointType>::Ptr& edge_in, pcl::PointCloud<PointType>::Ptr& surf_in, pcl::PointCloud<PointType>::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu){
   ros::Time t0 = ros::Time::now();
   if(!deskew){
     updatePointsToMap(edge_in, surf_in, qImu, UpdateType::VANILLA);
@@ -224,7 +224,7 @@ void OdomEstimationClass::UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelC
     //cout << "Registration time: " << t2-t0<<", first iteration: " << t1-t0 <<", second iteration: " << t2-t1 <<endl;
   }
 }
-void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
+void OdomEstimationClass::ProcessFrame(pcl::PointCloud<PointType>::Ptr& edge_in, pcl::PointCloud<PointType>::Ptr& surf_in, pcl::PointCloud<PointType>::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out){
 
   if(odom_initiated_ == false){
       pcl::PointCloud<pcl::PointXYZI>::Ptr uncompensated_edge_in = VelToIntensityCopy(edge_in);
@@ -237,7 +237,7 @@ void OdomEstimationClass::ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& su
   odom_out = odom;
 }
 
-void OdomEstimationClass::updatePointsToMap(const VelCurve::Ptr& edge_in, const VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
+void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<PointType>::Ptr& edge_in, const pcl::PointCloud<PointType>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type){
   IntensityCloud::Ptr edge_in_XYZI = VelToIntensityCopy(edge_in);
   IntensityCloud::Ptr surf_in_XYZI = VelToIntensityCopy(surf_in);
   updatePointsToMap(edge_in_XYZI, surf_in_XYZI, qImu, update_type);

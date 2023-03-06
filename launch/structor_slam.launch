@@ -38,7 +38,7 @@
     <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
     <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
     <node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/>
-    
+
 
     <include file="$(find lio_sam)/launch/slam_gps.launch">
       <arg name="slam_param_file" value="$(arg slam_param_file)" />

@@ -83,7 +83,7 @@ class SurfelExtraction
 {
 
 public:
-  SurfelExtraction(VelCurve::Ptr& surf_in, lidar::Lidar& lidar_par);
+  SurfelExtraction(pcl::PointCloud<PointType>::Ptr& surf_in, lidar::Lidar& lidar_par);
 
   void Extract(SurfElCloud& surfelCloud);
 
@@ -98,8 +98,8 @@ private:
   void Initialize();
 
   lidar::Lidar lidar_par_;
-  VelCurve::Ptr surf_in_;
-  std::vector<VelCurve::Ptr> ringClouds_; //sorted in time, and segmented per ring
+  pcl::PointCloud<PointType>::Ptr surf_in_;
+  std::vector<pcl::PointCloud<PointType>::Ptr> ringClouds_; //sorted in time, and segmented per ring
   std::vector<std::vector<double> > times_;
 
   pcl::PointXYZINormal defaultNormal;
@@ -131,7 +131,7 @@ class OdomEstimationClass
 
     void init(lidar::Lidar lidar_param, double map_resolution, const std::string& loss_function);
 
-    void ProcessFrame(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
+    void ProcessFrame(pcl::PointCloud<PointType>::Ptr& edge_in, pcl::PointCloud<PointType>::Ptr& surf_in, pcl::PointCloud<PointType>::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
 
     Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
 
@@ -139,7 +139,7 @@ private:
 
     void initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in, const Eigen::Quaterniond& qImu);
 
-    void UpdatePointsToMapSelector(VelCurve::Ptr& edge_in, VelCurve::Ptr& surf_in, VelCurve::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu);
+    void UpdatePointsToMapSelector(pcl::PointCloud<PointType>::Ptr& edge_in, pcl::PointCloud<PointType>::Ptr& surf_in, pcl::PointCloud<PointType>::Ptr& less_edge_in, bool deskew, const Eigen::Quaterniond& qImu);
 
     /*!
          * \brief updatePointsToMap
@@ -147,7 +147,7 @@ private:
          * \param surf_in
          * \param initial_iteration if set to true, perform one step using constant
          */
-    void updatePointsToMap(const VelCurve::Ptr& edge_in, const VelCurve::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type = UpdateType::VANILLA ); // ,
+    void updatePointsToMap(const pcl::PointCloud<PointType>::Ptr& edge_in, const pcl::PointCloud<PointType>::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type = UpdateType::VANILLA ); // ,
 
     void updatePointsToMap(const IntensityCloud::Ptr& edge_in, const IntensityCloud::Ptr& surf_in, const Eigen::Quaterniond& qImu, const UpdateType update_type);
 

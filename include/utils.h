@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 #include "lidar.h"
 #include "sensor_msgs/Imu.h"
+#include "odomEstimationClass.h"
 
 
 using boost::format;
@@ -47,16 +48,11 @@ sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in, const Eigen::Quate
 
 Eigen::Isometry3d vectorToAffine3d(double x, double y, double z, double ex, double ey, double ez);
 
-Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl);
+//Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl);
 
 
 
-//Runtime: 72 ms, faster than 99.56% of C++ online submissions for Find K Closest Elements.
-//Memory Usage: 31 MB, less than 16.67% of C++ online submissions for Find K Closest Elements.
-class NNSearchArray {
-public:
-    std::vector<int> findClosestElements(std::vector<double>& arr, int k, float max, float query);
-};
+
 
 
 

@@ -5,11 +5,7 @@
 #include "lidar.h"
 
 
-void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud){
 
-  std::sort(cloud->begin(),cloud->end(), lessThanKey());
-
-}
 Eigen::Quaterniond euler2Quaternion(const double roll, const double pitch, const double yaw)
 {
   Eigen::AngleAxisd rollAngle(roll*M_PI/180.0, Eigen::Vector3d::UnitX());

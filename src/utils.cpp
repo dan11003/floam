@@ -145,38 +145,17 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
     left = right - k;
   }
 
-  // cout << left << ", " << right << " -> ";
-
-  /*
-    since arr[idx] is just a surrogate of x,
-    we need to examine the diff of elements with "x" again
-    */
-
-  /*
-    while the diff of the element to the leftmost element "<=" that of the rightmost element,
-    move the subarray left
-
-    here the "<=" means we prefer smaller element
-    */
   while(left > 0 && query - arr[left-1] <= arr[right-1] - query){
     right--;
     left--;
   }
 
-  /*
-    while the diff of rightmost element "<" that of the element to the leftmost element,
-    move the subarray right
-    */
   while(right < n && arr[(right-1)+1] - query  < query - arr[left]){
     right++;
     left++;
   }
 
-  // cout << left << ", " << right << endl;
-  //std::vector<int> indicies(itr_begin()+left , itr_begin()+right);
-  //std::cout << "query: " << query << std::endl;
   for(auto itr = itr_begin + left  ; itr != itr_begin + right ; itr++){
-    //cout << std::fabs(query - *itr) << ", ";
     indicies.push_back(std::distance(itr_begin,itr));
   }
   //std::cout << std::endl << std::endl;
@@ -185,13 +164,13 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
 
 
 
-Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl){
+/*Eigen::Isometry3d EigenCombine(const Eigen::Quaterniond& q, const Eigen::Vector3d& transl){
   Eigen::Matrix4d prediction = Eigen::Matrix4d::Zero();
   Eigen::Matrix4d pred_mat;
   pred_mat.setIdentity();
   pred_mat.block<3,3>(0,0) = q.toRotationMatrix();
   pred_mat.block<3,1>(0,3) = transl;
   return Eigen::Isometry3d(pred_mat);
-}
+}*/
 
 

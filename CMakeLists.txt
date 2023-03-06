@@ -31,6 +31,7 @@ else()
 endif()
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
+find_package (PCL 1.8 REQUIRED)
 
 include_directories(
   include

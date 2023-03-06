@@ -38,75 +38,9 @@
 #include "utils.h"
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/random_sample.h>
+#include "lio_sam/generics.h"
 using std::cout;
 using std::endl;
-pcl::PointCloud<pcl::PointXYZI>::Ptr VelToIntensityCopy(const pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr VelCloud);
-
-typedef struct
-{
-    float l3; // largest eigen value;
-    float planarity;
-    int nSamples;
-    //Eigen::Matrix3d cov;
-    Eigen::Vector3d normal;
-    //Eigen::Vector3d mean;
-    Eigen::Vector3d centerPoint;
-    float entropy;
-    float intensity;
-    float time;
-    float curvature;
-
-}SurfelPointInfo;
-
-class SurfElCloud
-{
-public:
-  SurfElCloud() {}
-
-  NormalCloud::Ptr GetPointCloud()const;
-
-  auto begin(){return cloud.begin();}
-
-  auto end(){return cloud.end();}
-
-  SurfElCloud Transform(const Eigen::Isometry3d& transform)const;
-
-  std::vector<SurfelPointInfo> cloud;
-
-private:
-
-};
-
-
-
-class SurfelExtraction
-{
-
-public:
-  SurfelExtraction(pcl::PointCloud<PointType>::Ptr& surf_in, lidar::Lidar& lidar_par);
-
-  void Extract(SurfElCloud& surfelCloud);
-
-private:
-
-  void LineNNSearch( const int ring, const double query, int &row, Eigen::MatrixXd& neighbours);
-
-  bool GetNeighbours(const vel_point::PointXYZIRTC& pnt, Eigen::MatrixXd& neighbours);
-
-  bool EstimateNormal(const vel_point::PointXYZIRTC& pnt, SurfelPointInfo& surfEl);
-
-  void Initialize();
-
-  lidar::Lidar lidar_par_;
-  pcl::PointCloud<PointType>::Ptr surf_in_;
-  std::vector<pcl::PointCloud<PointType>::Ptr> ringClouds_; //sorted in time, and segmented per ring
-  std::vector<std::vector<double> > times_;
-
-  pcl::PointXYZINormal defaultNormal;
-
-};
-
-
 
 
 

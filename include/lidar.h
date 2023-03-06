@@ -16,19 +16,6 @@ using std::endl;
 using std::cout;
 
 
-typedef pcl::PointCloud<pcl::PointXYZINormal> NormalCloud;
-
-typedef pcl::PointCloud<pcl::PointXYZI> IntensityCloud;
-
-void SortTime(pcl::PointCloud<vel_point::PointXYZIRTC>::Ptr cloud);
-
-struct lessThanKey
-{
-  inline bool operator() (const PointType& p1, const PointType& p2)const
-  {
-    return (p1.time < p2.time);
-  }
-};
 
 inline vel_point::PointXYZIRTC ToCurvature(const PointType& pnt, const double curvature){
   PointType tmp;

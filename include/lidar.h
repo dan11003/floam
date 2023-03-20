@@ -40,6 +40,23 @@ void PublishCloud(const std::string& topic, pcl::PointCloud<T>& cloud, const std
   pubs[topic].publish(cloud);
 }
 
+template<class T>
+void PublishCloud(const std::string& topic, pcl::PointCloud<T>& cloud, const std::string& frame_id, const ros::Time& t, ros::NodeHandle& nh){
+
+  pcl_conversions::toPCL(t,cloud.header.stamp);
+  cloud.header.frame_id = frame_id;
+
+  static std::map<std::string, ros::Publisher> pubs;
+  std::map<std::string, ros::Publisher>::iterator it = pubs.find(topic);
+
+  if (it == pubs.end()){
+    pubs[topic] =  nh.advertise<pcl::PointCloud<T>>(topic,100);
+    pubs[topic].publish(cloud);
+    usleep(100*1000);
+  }
+  pubs[topic].publish(cloud);
+}
+
 namespace lidar{
 
 class Lidar

@@ -314,6 +314,7 @@ int main(int argc, char **argv)
   nh.param<bool>("/odom_save_odom", save_odom, false);
   nh.param<bool>("/export_odom_pcd", export_pcd, true);
   nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, true);
+
   if(saveRefinementGraph)
     graph = boost::shared_ptr<PoseGraph>(new PoseGraph());
 

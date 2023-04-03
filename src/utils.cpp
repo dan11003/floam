@@ -106,7 +106,7 @@ void SaveOdom(
 }
 
 
-std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, int k, float max, float query) {
+/*std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, int k, float max, float query) {
 
   auto itr_begin = arr.begin();
   auto itr_end = arr.end();
@@ -160,7 +160,7 @@ std::vector<int> NNSearchArray::findClosestElements(std::vector<double>& arr, in
   }
   //std::cout << std::endl << std::endl;
   return indicies;
-}
+}*/
 
 
 

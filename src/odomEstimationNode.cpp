@@ -268,6 +268,7 @@ void odom_estimation(){
       if(graph != nullptr){
         Node n;
         n.T = poseEstimate;
+        n.imu = qCurrent;
         n.segmented_scans = {pointcloud_surf_in, pointcloud_edge_in, pointcloud_less_edge_in};
         graph->AddNode(n, total_frame);
       }

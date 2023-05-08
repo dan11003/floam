@@ -183,6 +183,7 @@ int main(int argc, char **argv)
   double min_dis = 2.0;
   std::string imu_topic = "/imu/data";
   std::string velodyne_topic = "/velodyne_points";
+  double calib_ex, calib_ey, calib_ez;
 
   nh.getParam("/scan_period", scan_period);
   nh.getParam("/vertical_angle", vertical_angle);
@@ -190,6 +191,9 @@ int main(int argc, char **argv)
   nh.getParam("/min_dis", min_dis);
   nh.getParam("/scan_line", scan_line);
   nh.getParam("/imu_topic", imu_topic);
+  nh.getParam("/calib_ex", calib_ex);
+  nh.getParam("/calib_ey", calib_ey);
+  nh.getParam("/calib_ez", calib_ez);
 
   lidar_param.setScanPeriod(scan_period);
   lidar_param.setVerticalAngle(vertical_angle);
@@ -197,7 +201,8 @@ int main(int argc, char **argv)
   lidar_param.setMaxDistance(max_dis);
   lidar_param.setMinDistance(min_dis);
 
-  exstrinsics = euler2Quaternion(0,0,180);
+  exstrinsics = euler2Quaternion(calib_ex, calib_ey, calib_ez);
+  cout << "Using extrinsics " <<  calib_ex << " " << calib_ey << " " << calib_ez << endl;
 
   laserProcessing.init(lidar_param);
 

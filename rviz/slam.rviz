@@ -8,6 +8,7 @@ Panels:
         - /links1
         - /links1/TF1
         - /links1/TF1/Frames1
+        - /Odometry1
         - /Odometry1/Odom lidar1/Shape1
         - /Odometry1/Map (cloud)2
         - /Feature Cloud1
@@ -163,7 +164,7 @@ Visualization Manager:
           Class: rviz/PointCloud2
           Color: 255; 255; 255
           Color Transformer: Intensity
-          Decay Time: 300
+          Decay Time: 3
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
@@ -175,12 +176,12 @@ Visualization Manager:
           Size (Pixels): 2
           Size (m): 0.009999999776482582
           Style: Points
-          Topic: /scan_registered
+          Topic: /laser_cloud_surf
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-      Enabled: false
+      Enabled: true
       Name: Odometry
     - Class: rviz/Group
       Displays:
@@ -520,7 +521,7 @@ Visualization Manager:
           Plane Cell Count: 1000
           Reference Frame: <Fixed Frame>
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Mapping
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -805,7 +806,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.431273460388184
+      Distance: 11.812018394470215
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -813,17 +814,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.7755063772201538
-        Y: 1.2465664148330688
-        Z: -0.6002640128135681
+        X: 0.5229281783103943
+        Y: 0.4069049656391144
+        Z: 1.1731574535369873
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2547967433929443
-      Target Frame: <Fixed Frame>
-      Yaw: 4.2903733253479
+      Pitch: 0.924796998500824
+      Target Frame: base_link
+      Yaw: 4.188570976257324
     Saved: ~
 Window Geometry:
   Displays:

@@ -15,6 +15,11 @@
     <param name="deskew" type="bool" value="true" />
     <param name="imu_topic" type="string" value="/nav/filtered_imu/data" /> <!-- Structor FLOAM -->
     <param name="loss_function" type="string" value="Cauchy" />
+    
+    
+    <param name="calib_ex" type="double" value="0.1" />
+    <param name="calib_ey" type="double" value="0.2" />
+    <param name="calib_ez" type="double" value="180.3" />
 
 
     <!-- EXPORTS -->

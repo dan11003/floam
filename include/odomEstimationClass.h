@@ -67,7 +67,7 @@ class OdomEstimationClass
 
     void ProcessFrame(pcl::PointCloud<PointType>::Ptr& edge_in, pcl::PointCloud<PointType>::Ptr& surf_in, pcl::PointCloud<PointType>::Ptr& less_edge_in, const Eigen::Quaterniond& qImu, Eigen::Isometry3d& odom_out);
 
-    Eigen::Vector3d GetVelocity(){return (odom.translation() - last_odom.translation())/lidar_param_.scan_period;}
+    Eigen::Vector3d GetVelocity(){return (last_odom.inverse()*odom).translation()/lidar_param_.scan_period;}
 
 private:
 

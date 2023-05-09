@@ -50,6 +50,7 @@ void OdomEstimationClass::UpdatePointsToMapSelector(pcl::PointCloud<PointType>::
   }else{
     updatePointsToMap(edge_in, edge_in, qImu, UpdateType::INITIAL_ITERATION);
     Eigen::Vector3d velocity = GetVelocity();
+    cout << "vel: " << velocity.transpose() << endl;
     dmapping::CompensateVelocity(edge_in, velocity);
     dmapping::CompensateVelocity(surf_in, velocity);
     dmapping::CompensateVelocity(less_edge_in, velocity);

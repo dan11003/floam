@@ -18,7 +18,6 @@ Panels:
         - /gps_debug1/Odometry2/Shape1
         - /gps_debug1/Odometry3/Shape1
         - /gps_debug1/Odometry4/Shape1
-        - /PointCloud22
       Splitter Ratio: 0.4853801131248474
     Tree Height: 1034
   - Class: rviz/Selection
@@ -790,6 +789,15 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /lio_sam/mapping/loop_closure_constraints
+      Name: MarkerArray
+      Namespaces:
+        loop_edges: true
+        loop_nodes: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -806,7 +814,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 11.812018394470215
+      Distance: 11.728294372558594
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -814,17 +822,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.5229281783103943
-        Y: 0.4069049656391144
-        Z: 1.1731574535369873
+        X: 2.1496105194091797
+        Y: 1.3349038362503052
+        Z: 0.44599488377571106
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.924796998500824
-      Target Frame: base_link
-      Yaw: 4.188570976257324
+      Pitch: 1.209796667098999
+      Target Frame: <Fixed Frame>
+      Yaw: 3.9585814476013184
     Saved: ~
 Window Geometry:
   Displays:

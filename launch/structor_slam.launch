@@ -9,6 +9,7 @@
     
     <!-- for HDL-32C -->
     <!--param name="scan_line" value="32" /-->
+    
     <!--- Sim Time -->
     <param name="scan_period" value="0.1" />
 
@@ -16,6 +17,8 @@
     <param name="vertical_angle" type="double" value="2.0" />    <!-- for VLP-16 -->
     
     <param name="map_resolution" type="double" value="0.2" />
+    
+    
     <param name="output_downsample_size" type="double" value="0.1" />
     <param name="deskew" type="bool" value="true" />
     <param name="imu_topic" type="string" value="/nav/filtered_imu/data" /> <!-- Structor FLOAM -->

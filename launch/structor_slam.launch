@@ -33,16 +33,18 @@
     <!-- EXPORTS -->
     <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
     <!-- ODOM EXPORTS -->
-    <param name="export_odom_pcd" type="bool" value="true" />
+    <param name="export_odom_pcd" type="bool" value="false" />
     <param name="odom_save_posegraph" type="bool" value="false" />
-    <param name="odom_save_odom" type="bool" value="true" />
-    <param name="odom_save_balm" type="bool" value="true" />
+    <param name="odom_save_odom" type="bool" value="false" />
+    <param name="odom_save_balm" type="bool" value="false" />
+    <param name="odom_save_balm2" type="bool" value="true" />
 
     <!-- SLAM EXPORTS -->
     <param name="export_slam_pcd" type="bool" value="false" />
     <param name="slam_save_posegraph" type="bool" value="false" />
     <param name="slam_save_odom" type="bool" value="false" />
     <param name="slam_save_balm" type="bool" value="false" />
+    <param name="slam_save_balm2" type="bool" value="false" />
     <param name="saveRefinementGraph" type="bool" value="false" />
 
     <param name="max_dis" type="double" value="90.0" />

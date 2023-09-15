@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" />
-    <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" /-->
+    <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" /-->
+    <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" />
 
     <!-- For Velodyne VLP-16 -->
     <param name="scan_line" value="16" />
@@ -33,14 +33,14 @@
     <!-- EXPORTS -->
     <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
     <!-- ODOM EXPORTS -->
-    <param name="export_odom_pcd" type="bool" value="false" />
+    <param name="export_odom_pcd" type="bool" value="true" />
     <param name="odom_save_posegraph" type="bool" value="false" />
     <param name="odom_save_odom" type="bool" value="false" />
     <param name="odom_save_balm" type="bool" value="false" />
     <param name="odom_save_balm2" type="bool" value="true" />
 
     <!-- SLAM EXPORTS -->
-    <param name="export_slam_pcd" type="bool" value="false" />
+    <param name="export_slam_pcd" type="bool" value="true" />
     <param name="slam_save_posegraph" type="bool" value="false" />
     <param name="slam_save_odom" type="bool" value="false" />
     <param name="slam_save_balm" type="bool" value="false" />
@@ -52,7 +52,6 @@
 
     <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
     <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
-    <node pkg="floam" type="floam_laser_mapping_node" name="floam_laser_mapping_node" output="screen"/>
 
 
     <include file="$(find lio_sam)/launch/slam_gps.launch">

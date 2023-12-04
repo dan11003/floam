@@ -5,10 +5,10 @@
     <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" />
 
     <!-- For Velodyne VLP-16 -->
-    <param name="scan_line" value="16" />
+    <!--param name="scan_line" value="16" /-->
     
     <!-- for HDL-32C -->
-    <!--param name="scan_line" value="32" /-->
+    <param name="scan_line" value="32" />
     
     <!--- Sim Time -->
     <param name="scan_period" value="0.1" />

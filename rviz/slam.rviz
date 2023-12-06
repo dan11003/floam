@@ -12,7 +12,6 @@ Panels:
         - /Mapping1/gps_swepos1/Shape1
         - /Mapping1/gps_swepos1/Covariance1
         - /Mapping1/gps_swepos1/Covariance1/Position1
-        - /Mapping1/gps constraints1
       Splitter Ratio: 0.4853801131248474
     Tree Height: 674
   - Class: rviz/Selection

@@ -12,6 +12,7 @@ Panels:
         - /Mapping1/gps_swepos1/Shape1
         - /Mapping1/gps_swepos1/Covariance1
         - /Mapping1/gps_swepos1/Covariance1/Position1
+        - /Mapping1/gps constraints1
       Splitter Ratio: 0.4853801131248474
     Tree Height: 674
   - Class: rviz/Selection
@@ -608,7 +609,7 @@ Visualization Manager:
           Topic: /gps_swepos
           Unreliable: false
           Value: true
-        - Alpha: 0.5
+        - Alpha: 1
           Autocompute Intensity Bounds: false
           Autocompute Value Bounds:
             Max Value: 10
@@ -631,7 +632,7 @@ Visualization Manager:
           Queue Size: 10
           Selectable: true
           Size (Pixels): 3
-          Size (m): 1
+          Size (m): 0.30000001192092896
           Style: Spheres
           Topic: /lio_sam/mapping/gps_constraints
           Unreliable: false
@@ -656,7 +657,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 123.2576675415039
+      Distance: 52.75595474243164
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -664,17 +665,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 5.438129901885986
-        Y: 12.88076400756836
-        Z: 18.435504913330078
+        X: -77.40223693847656
+        Y: 17.8824405670166
+        Z: 8.463749885559082
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1147964000701904
+      Pitch: 0.9647965431213379
       Target Frame: map
-      Yaw: 5.690401554107666
+      Yaw: 3.7253825664520264
     Saved: ~
 Window Geometry:
   Displays:

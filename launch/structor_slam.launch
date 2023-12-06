@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+    <param name="use_sim_time" value="true" />
 
     <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" /-->
     <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" />
@@ -16,7 +17,7 @@
     <!--param name="vertical_angle" type="double" value="1.34" /--> <!-- for HDL-32C -->
     <param name="vertical_angle" type="double" value="2.0" />    <!-- for VLP-16 -->
     
-    <param name="map_resolution" type="double" value="0.2" />
+    <param name="map_resolution" type="double" value="0.5" />
     
     
     <param name="output_downsample_size" type="double" value="0.1" />
@@ -37,7 +38,7 @@
     <param name="odom_save_posegraph" type="bool" value="false" />
     <param name="odom_save_odom" type="bool" value="false" />
     <param name="odom_save_balm" type="bool" value="false" />
-    <param name="odom_save_balm2" type="bool" value="true" />
+    <param name="odom_save_balm2" type="bool" value="false" />
 
     <!-- SLAM EXPORTS -->
     <param name="export_slam_pcd" type="bool" value="true" />
@@ -50,13 +51,16 @@
     <param name="max_dis" type="double" value="90.0" />
     <param name="min_dis" type="double" value="0.5" />
 
-    <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
-    <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
+    <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="log"/>
+    <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="log"/>
 
 
     <include file="$(find lio_sam)/launch/slam_gps.launch">
       <arg name="slam_param_file" value="$(arg slam_param_file)" />
     </include>
+
+    <include file="$(find structor_mapping)/launch/gps_utils.launch" />
+    
     
     <arg name="rviz" default="true" />
     <group if="$(arg rviz)">

@@ -135,9 +135,7 @@ void laser_processing(){
 
       std::chrono::time_point<std::chrono::system_clock> start, end;
       start = std::chrono::system_clock::now();
-      cout << "extract" << endl;
       laserProcessing.featureExtraction(pointcloud_in, pointcloud_edge, pointcloud_surf, pointcloud_less_flat, pointcloud_less_edge);
-      cout << "extracted" << endl;
       end = std::chrono::system_clock::now();
       std::chrono::duration<float> elapsed_seconds = end - start;
       total_frame++;

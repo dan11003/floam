@@ -9,10 +9,10 @@ Panels:
         - /links1/TF1/Frames1
         - /Odometry1/Odom lidar1/Shape1
         - /Mapping1
-        - /Mapping1/gps_swepos1/Shape1
-        - /Mapping1/gps_swepos1/Covariance1
-        - /Mapping1/gps_swepos1/Covariance1/Position1
-        - /Mapping1/gps constraints1
+        - /Mapping1/gps_sweref1
+        - /Mapping1/gps_sweref1/Shape1
+        - /Mapping1/gps_sweref1/Covariance1
+        - /Mapping1/gps_sweref1/Covariance1/Position1
       Splitter Ratio: 0.4853801131248474
     Tree Height: 674
   - Class: rviz/Selection
@@ -593,7 +593,7 @@ Visualization Manager:
             Value: true
           Enabled: true
           Keep: 100000
-          Name: gps_swepos
+          Name: gps_sweref
           Position Tolerance: 0.20000000298023224
           Queue Size: 10
           Shape:
@@ -606,7 +606,7 @@ Visualization Manager:
             Shaft Length: 0
             Shaft Radius: 0.05000000074505806
             Value: Arrow
-          Topic: /gps_swepos
+          Topic: /gps_sweref
           Unreliable: false
           Value: true
         - Alpha: 1
@@ -657,7 +657,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 52.75595474243164
+      Distance: 12.340723991394043
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -665,17 +665,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -77.40223693847656
-        Y: 17.8824405670166
-        Z: 8.463749885559082
+        X: -25.85317611694336
+        Y: -38.65590286254883
+        Z: 8.996023178100586
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9647965431213379
+      Pitch: 0.9847965240478516
       Target Frame: map
-      Yaw: 3.7253825664520264
+      Yaw: 3.870382785797119
     Saved: ~
 Window Geometry:
   Displays:

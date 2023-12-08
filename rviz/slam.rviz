@@ -13,6 +13,7 @@ Panels:
         - /Mapping1/gps_sweref1/Shape1
         - /Mapping1/gps_sweref1/Covariance1
         - /Mapping1/gps_sweref1/Covariance1/Position1
+        - /Axes1
       Splitter Ratio: 0.4853801131248474
     Tree Height: 674
   - Class: rviz/Selection
@@ -44,20 +45,12 @@ Visualization Manager:
             All Enabled: false
             base_link:
               Value: true
-            base_link_now:
-              Value: false
-            base_link_scliosam:
-              Value: true
             chassis_link:
               Value: false
             gps:
               Value: false
             imu_corrected:
               Value: false
-            map:
-              Value: true
-            odom:
-              Value: true
             velodyne:
               Value: false
           Marker Alpha: 1
@@ -67,20 +60,14 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            map:
-              base_link_scliosam:
-                {}
-            odom:
-              base_link:
-                chassis_link:
-                  gps:
-                    {}
-                  imu_corrected:
-                    {}
-                  velodyne:
-                    {}
-              base_link_now:
-                {}
+            base_link:
+              chassis_link:
+                gps:
+                  {}
+                imu_corrected:
+                  {}
+                velodyne:
+                  {}
           Update Interval: 0
           Value: true
       Enabled: true
@@ -588,7 +575,7 @@ Visualization Manager:
             Position:
               Alpha: 1
               Color: 204; 51; 204
-              Scale: 0.10000000149011612
+              Scale: 1
               Value: true
             Value: true
           Enabled: true
@@ -641,6 +628,15 @@ Visualization Manager:
           Value: true
       Enabled: true
       Name: Mapping
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: true
+      Length: 10
+      Name: Axes
+      Radius: 1
+      Reference Frame: <Fixed Frame>
+      Show Trail: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -657,7 +653,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.340723991394043
+      Distance: 370.437744140625
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -665,17 +661,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -25.85317611694336
-        Y: -38.65590286254883
-        Z: 8.996023178100586
+        X: 17.823566436767578
+        Y: -37.36733627319336
+        Z: -0.878350019454956
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9847965240478516
+      Pitch: 1.5697963237762451
       Target Frame: map
-      Yaw: 3.870382785797119
+      Yaw: 4.608586311340332
     Saved: ~
 Window Geometry:
   Displays:

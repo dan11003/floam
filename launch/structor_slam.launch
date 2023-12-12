@@ -59,7 +59,7 @@
       <arg name="slam_param_file" value="$(arg slam_param_file)" />
     </include>
 
-    <include file="$(find structor_mapping)/launch/gps_utils.launch" />
+  <!--include file="$(find structor_mapping)/launch/gps_utils.launch" /--> <!-- only for testing-->
     
     
     <arg name="rviz" default="true" />

@@ -33,6 +33,9 @@
 
     <!-- EXPORTS -->
     <param name="directory_output" value="/home/$(env USER)/Downloads/export/" /> <!-- for both liosam and floam -->
+    <!-- IMPORTS-->
+    <param name="gnss/gps_logfile_path" value="/home/$(env USER)/Documents/2023-12-18_11-41/2023-12-18_11-41_gcp.csv" /> <!-- for both liosam and floam -->
+    
     <!-- ODOM EXPORTS -->
     <param name="export_odom_pcd" type="bool" value="true" />
     <param name="odom_save_posegraph" type="bool" value="false" />
@@ -53,13 +56,14 @@
 
     <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="log"/>
     <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="log"/>
+    
 
 
     <include file="$(find lio_sam)/launch/slam_gps.launch">
       <arg name="slam_param_file" value="$(arg slam_param_file)" />
     </include>
 
-  <!--include file="$(find structor_mapping)/launch/gps_utils.launch" /--> <!-- only for testing-->
+  <include file="$(find structor_mapping)/launch/gps_utils.launch" /> <!-- only for testing-->
     
     
     <arg name="rviz" default="true" />

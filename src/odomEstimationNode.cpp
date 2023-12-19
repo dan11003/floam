@@ -284,6 +284,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "main");
   ros::NodeHandle nh;
+  pcl::console::setVerbosityLevel(pcl::console::L_ERROR);
 
   std::string directory;
   int scan_line = 64;

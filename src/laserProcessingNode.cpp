@@ -28,7 +28,7 @@
 #include "laserProcessingClass.h"
 #include "dataHandler.h"
 #include "lio_sam/generics.h"
-
+#include "pcl/console/print.h"
 
 LaserProcessingClass laserProcessing;
 std::mutex mutex_lock;
@@ -171,8 +171,10 @@ void laser_processing(){
 
 int main(int argc, char **argv)
 {
+
   ros::init(argc, argv, "main");
   ros::NodeHandle nh;
+  pcl::console::setVerbosityLevel(pcl::console::L_ERROR);
 
   int scan_line = 64;
   double vertical_angle = 2.0;

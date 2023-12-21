@@ -11,7 +11,6 @@
 
   <!--arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_indoor.yaml" /-->
   <arg name="slam_param_file" default="$(find lio_sam)/config/params_structor_outdoor.yaml" />
-
   <param name="map_resolution" type="double" value="0.5" />
   <param name="calib_ex" type="double" value="-0.24" />
   <param name="calib_ey" type="double" value="0.18" />
@@ -23,8 +22,8 @@
   <param name="min_dis" type="double" value="0.5" />
 
 <!-- Launching -->
-  <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="screen"/>
-  <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
+  <node pkg="floam" type="floam_odom_estimation_node" name="floam_odom_estimation_node" output="log"/>
+  <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="log"/>
 
   <include file="$(find lio_sam)/launch/slam_gps.launch">
     <arg name="slam_param_file" value="$(arg slam_param_file)" />

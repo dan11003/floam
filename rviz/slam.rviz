@@ -8,7 +8,7 @@ Panels:
         - /links1/TF1
         - /links1/TF1/Frames1
         - /Odometry1/Odom lidar1/Shape1
-        - /Mapping1/gps_sweref1
+        - /Mapping1
         - /Mapping1/gps_sweref1/Shape1
         - /Mapping1/gps_sweref1/Covariance1
         - /Mapping1/gps_sweref1/Covariance1/Position1
@@ -356,7 +356,7 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: FLOAM_Odometry
-      Enabled: true
+      Enabled: false
       Name: Odometry
     - Class: rviz/Group
       Displays:
@@ -652,7 +652,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 14.9951810836792
+      Distance: 139.92147827148438
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -660,17 +660,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.09723437577486038
-        Y: 2.5985095500946045
-        Z: -9.58251667022705
+        X: -64.22080993652344
+        Y: 23.933761596679688
+        Z: -9.220833778381348
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2747962474822998
+      Pitch: 1.0547964572906494
       Target Frame: map
-      Yaw: 4.533611297607422
+      Yaw: 4.253608226776123
     Saved: ~
 Window Geometry:
   Displays:

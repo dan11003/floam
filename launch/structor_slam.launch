@@ -28,8 +28,6 @@
   <include file="$(find lio_sam)/launch/slam_gps.launch">
     <arg name="slam_param_file" value="$(arg slam_param_file)" />
   </include>
-
-  <include file="$(find structor_mapping)/launch/gps_utils.launch" /> <!-- only for testing-->
   
   <group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find floam)/rviz/slam.rviz" />

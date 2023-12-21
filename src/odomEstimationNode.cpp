@@ -301,21 +301,21 @@ int main(int argc, char **argv)
   bool export_pcd = true;
 
 
-  nh.getParam("/scan_period", scan_period);
-  nh.getParam("/vertical_angle", vertical_angle);
+  nh.param<double>("/scan_period", scan_period, 0.1);
+  nh.param<double>("/vertical_angle", vertical_angle, 2.0);
   nh.getParam("/max_dis", max_dis);
   nh.getParam("/min_dis", min_dis);
-  nh.getParam("/scan_line", scan_line);
+  nh.param<int>("/scan_line", scan_line, 32);
   nh.getParam("/map_resolution", map_resolution);
   nh.getParam("/directory_output", directory);
-  nh.getParam("/output_downsample_size", output_downsample_size);
-  nh.getParam("/loss_function", loss_function);
-  nh.getParam("/deskew", deskew);
+  nh.param<double>("/output_downsample_size", output_downsample_size, 0.3);
+  nh.param<std::string>("/loss_function", loss_function, "Cauchy");
+  nh.param<bool>("/deskew", deskew, true);
   nh.param<bool>("/odom_save_balm", save_BALM, false);
   nh.param<bool>("/odom_save_posegraph", save_Posegraph, false);
   nh.param<bool>("/odom_save_odom", save_odom, false);
-  nh.param<bool>("/export_odom_pcd", export_pcd, true);
-  nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, true);
+  nh.param<bool>("/export_odom_pcd", export_pcd, false);
+  nh.param<bool>("/saveRefinementGraph", saveRefinementGraph, false);
 
   if(saveRefinementGraph)
     graph = boost::shared_ptr<PoseGraph>(new PoseGraph());
@@ -363,15 +363,15 @@ int main(int argc, char **argv)
   else{
     std::cout << "\"FLOAM\"  - Saving disabled " << std::endl;
   }
-  if(save_BALM && export_pcd){
+  if(save_BALM){
     //cout << "Save BALM data " << endl;
     SavePosesHomogeneousBALM(dataStorage.clouds, dataStorage.poses, directory + "BALM/", output_downsample_size);
   }
-  if(save_Posegraph && export_pcd){
+  if(save_Posegraph){
     //cout << "Save Posegraph" << endl;
     SavePosegraph(directory + "posegraph", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds );
   }
-  if(save_odom && export_pcd){
+  if(save_odom){
     //cout << "Save Posegraph" << endl;
     SaveOdom(directory + "odom", dataStorage.poses, dataStorage.keyframe_stamps, dataStorage.clouds);
   }

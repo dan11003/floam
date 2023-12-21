@@ -190,7 +190,7 @@ int main(int argc, char **argv)
   nh.getParam("/max_dis", max_dis);
   nh.getParam("/min_dis", min_dis);
   nh.getParam("/scan_line", scan_line);
-  nh.getParam("/imu_topic", imu_topic);
+  nh.param<std::string>("/imu_topic", imu_topic, "/nav/filtered_imu/data");
   nh.getParam("/calib_ex", calib_ex);
   nh.getParam("/calib_ey", calib_ey);
   nh.getParam("/calib_ez", calib_ez);

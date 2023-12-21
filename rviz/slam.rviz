@@ -8,7 +8,6 @@ Panels:
         - /links1/TF1
         - /links1/TF1/Frames1
         - /Odometry1/Odom lidar1/Shape1
-        - /Mapping1
         - /Mapping1/gps_sweref1
         - /Mapping1/gps_sweref1/Shape1
         - /Mapping1/gps_sweref1/Covariance1
@@ -49,18 +48,10 @@ Visualization Manager:
               Value: true
             base_link_scliosam:
               Value: true
-            chassis_link:
-              Value: false
-            gps:
-              Value: false
-            imu_corrected:
-              Value: false
             map:
               Value: true
             odom:
               Value: true
-            velodyne:
-              Value: false
           Marker Alpha: 1
           Marker Scale: 3
           Name: TF
@@ -73,13 +64,7 @@ Visualization Manager:
                 {}
             odom:
               base_link:
-                chassis_link:
-                  gps:
-                    {}
-                  imu_corrected:
-                    {}
-                  velodyne:
-                    {}
+                {}
               base_link_now:
                 {}
           Update Interval: 0
@@ -371,7 +356,7 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: FLOAM_Odometry
-      Enabled: false
+      Enabled: true
       Name: Odometry
     - Class: rviz/Group
       Displays:
@@ -645,9 +630,9 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/Axes
       Enabled: true
-      Length: 10
+      Length: 1
       Name: Axes
-      Radius: 1
+      Radius: 0.009999999776482582
       Reference Frame: <Fixed Frame>
       Show Trail: false
       Value: true
@@ -667,7 +652,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 41.9018669128418
+      Distance: 14.9951810836792
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -675,17 +660,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -24.46584129333496
-        Y: -52.651432037353516
-        Z: -11.17250919342041
+        X: 0.09723437577486038
+        Y: 2.5985095500946045
+        Z: -9.58251667022705
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1547963619232178
+      Pitch: 1.2747962474822998
       Target Frame: map
-      Yaw: 2.6985855102539062
+      Yaw: 4.533611297607422
     Saved: ~
 Window Geometry:
   Displays:

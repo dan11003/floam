@@ -16,6 +16,10 @@
   <param name="calib_ey" type="double" value="0.18" />
   <param name="calib_ez" type="double" value="180.0" />
 
+  <param name="/gnss/use_gcp_triggers" type="bool" value="true" />
+  <param name="/gnss/use_gcp_log_file" type="bool" value="true" />
+
+
 <!-- SLAM EXPORTS -->
   <param name="export_slam_pcd" type="bool" value="true" />
   <param name="max_dis" type="double" value="90.0" />
